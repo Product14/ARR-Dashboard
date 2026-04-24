@@ -1839,7 +1839,7 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
 
         <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full table-auto border-collapse">
-            <RooftopsTableHeader />
+            <RooftopsTableHeader period={periodLabel} />
             <tbody>
               {visibleData.map((enterprise) => (
                 <EnterpriseTableRow key={enterprise.id} enterprise={enterprise} />

@@ -3,6 +3,7 @@ import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import "./globals.css"
 import { Toaster } from "@/components/ui/toaster"
+import { AdminShell } from "@/components/admin-shell"
 
 const inter = Inter({
   subsets: ["latin"],
@@ -32,7 +33,7 @@ html {
         `}</style>
       </head>
       <body className={inter.className}>
-        {children}
+        <AdminShell>{children}</AdminShell>
         <Toaster />
       </body>
     </html>
