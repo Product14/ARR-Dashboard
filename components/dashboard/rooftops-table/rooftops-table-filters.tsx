@@ -2,6 +2,14 @@
 
 import React, { useState, useRef, useEffect } from "react"
 
+const SUB_STAGE_MAP: Record<string, string[]> = {
+  "Contract-Initiated": [],
+  "Contracted":  ["Meet Pending", "Meet Scheduled", "Meet Done", "Meet Cancelled", "Meet Rescheduled"],
+  "Onboarding":  ["OB To Be Scheduled", "In Implementation", "Under Review", "Client Unresponsive", "CSM Handover Pending", "OB Live"],
+  "Live":        ["OB Live"],
+  "Churned":     ["Sales Drop off", "OB Drop off", "Drop off"],
+}
+
 interface FilterOption {
   label: string
   value: string
@@ -15,6 +23,7 @@ interface RooftopsTableFiltersProps {
   onProductChange?: (products: string[]) => void
   onRooftopTypeChange?: (types: string[]) => void
   onStageChange?: (stages: string[]) => void
+  onSubStageChange?: (subStages: string[]) => void
   onLiveArrChange?: (filters: { operator: string; amount: number | number[] }[]) => void
   onContractedArrChange?: (filters: { operator: string; amount: number | number[] }[]) => void
   onHealthScoreChange?: (ranges: { min: number; max: number }[]) => void
@@ -25,6 +34,8 @@ interface RooftopsTableFiltersProps {
   onMediaChange?: (media: string[]) => void
   onAgentChange?: (agents: string[]) => void
   onDealerSegmentChange?: (segments: string[]) => void
+  onStudioPlanChange?: (plan: string) => void
+  studioPlanValue?: string
   activeTab?: "all" | "studio_ai" | "vini_ai"
   atRiskActive?: boolean
   mediaValues?: string[]
@@ -35,6 +46,7 @@ interface RooftopsTableFiltersProps {
   subTypeValues?: string[]
   productValues?: string[]
   stageValues?: string[]
+  subStageValues?: string[]
   liveArrFilters?: { operator: string; amount: number | number[] }[]
   contractedArrFilters?: { operator: string; amount: number | number[] }[]
   healthScoreRanges?: { min: number; max: number }[]
@@ -51,6 +63,7 @@ export function RooftopsTableFilters({
   onProductChange,
   onRooftopTypeChange,
   onStageChange,
+  onSubStageChange,
   onLiveArrChange,
   onContractedArrChange,
   onHealthScoreChange,
@@ -61,20 +74,20 @@ export function RooftopsTableFilters({
   onMediaChange,
   onAgentChange,
   onDealerSegmentChange,
+  onStudioPlanChange,
+  studioPlanValue,
   activeTab = "all",
   atRiskActive = false,
   mediaValues = [],
   agentValues = [],
   searchValue,
-  planValue,
   typeValue = [],
-  subTypeValues = [],
   productValues = [],
   stageValues = [],
+  subStageValues = [],
   liveArrFilters = [],
   contractedArrFilters = [],
   healthScoreRanges = [],
-  regionValues = [],
   accountType = 'live',
   periodValue = { type: 'mtd' },
 }: RooftopsTableFiltersProps) {
@@ -89,14 +102,9 @@ export function RooftopsTableFilters({
   const [showMoreFilters, setShowMoreFilters] = useState(false)
   
   // More Filters dropdown states
-  const [showPlanDropdown, setShowPlanDropdown] = useState(false)
-  const [showSubTypeDropdown, setShowSubTypeDropdown] = useState(false)
-  const [showRegionDropdown, setShowRegionDropdown] = useState(false)
-  const [showHealthScoreDropdown, setShowHealthScoreDropdown] = useState(false)
-  const [showMediaDropdown, setShowMediaDropdown] = useState(false)
-  const [showStageInMoreDropdown, setShowStageInMoreDropdown] = useState(false)
   const [showMediaTabDropdown, setShowMediaTabDropdown] = useState(false)
   const [showAgentDropdown, setShowAgentDropdown] = useState(false)
+  const [showStudioPlanDropdown, setShowStudioPlanDropdown] = useState(false)
   
   // Views states
   const [showViewsDropdown, setShowViewsDropdown] = useState(false)
@@ -130,29 +138,23 @@ export function RooftopsTableFilters({
   const productDropdownRef = useRef<HTMLDivElement>(null)
   const stageDropdownRef = useRef<HTMLDivElement>(null)
   const moreFiltersRef = useRef<HTMLDivElement>(null)
-  const planDropdownRef = useRef<HTMLDivElement>(null)
-  const subTypeDropdownRef = useRef<HTMLDivElement>(null)
-  const regionDropdownRef = useRef<HTMLDivElement>(null)
-  const healthScoreDropdownRef = useRef<HTMLDivElement>(null)
-  const mediaDropdownRef = useRef<HTMLDivElement>(null)
-  const stageInMoreDropdownRef = useRef<HTMLDivElement>(null)
   const viewsDropdownRef = useRef<HTMLDivElement>(null)
   const mediaTabDropdownRef = useRef<HTMLDivElement>(null)
   const agentDropdownRef = useRef<HTMLDivElement>(null)
   const dealerSegmentDropdownRef = useRef<HTMLDivElement>(null)
+  const studioPlanDropdownRef = useRef<HTMLDivElement>(null)
 
   // Local state for filters
   const [selectedTypes, setSelectedTypes] = useState<string[]>(typeValue || [])
   const [selectedRooftopTypes, setSelectedRooftopTypes] = useState<string[]>([])
   const [selectedDealerSegments, setSelectedDealerSegments] = useState<string[]>([])
-  const [selectedPlan, setSelectedPlan] = useState<string>(planValue || "All")
   const [selectedStages, setSelectedStages] = useState<string[]>(stageValues)
-  const [selectedRegions, setSelectedRegions] = useState<string[]>(regionValues)
-  const [selectedSubTypes, setSelectedSubTypes] = useState<string[]>(subTypeValues)
+  const [selectedSubStages, setSelectedSubStages] = useState<string[]>(subStageValues)
+  const [subStagePanelStage, setSubStagePanelStage] = useState<string | null>(null)
   const [selectedProducts, setSelectedProducts] = useState<string[]>(productValues)
-  const [selectedHealthScoreRanges, setSelectedHealthScoreRanges] = useState<string[]>([])
   const [selectedMediaTab, setSelectedMediaTab] = useState<string[]>(mediaValues)
   const [selectedAgents, setSelectedAgents] = useState<string[]>(agentValues)
+  const [selectedStudioPlan, setSelectedStudioPlan] = useState<string>(studioPlanValue || "All")
 
   // Available type options with proper API mapping
   const typeOptions: FilterOption[] = [
@@ -409,11 +411,46 @@ export function RooftopsTableFilters({
   }
 
   const handleStageToggle = (stage: string) => {
-    const newStages = selectedStages.includes(stage)
-      ? selectedStages.filter(s => s !== stage)
-      : [...selectedStages, stage]
+    const subStages = SUB_STAGE_MAP[stage] ?? []
+    const isSelected = selectedStages.includes(stage)
+    let newStages: string[]
+    let newSubStages: string[]
+    if (isSelected) {
+      newStages = selectedStages.filter(s => s !== stage)
+      newSubStages = selectedSubStages.filter(ss => !subStages.includes(ss))
+    } else {
+      newStages = [...selectedStages, stage]
+      newSubStages = [...selectedSubStages.filter(ss => !subStages.includes(ss)), ...subStages]
+    }
     setSelectedStages(newStages)
+    setSelectedSubStages(newSubStages)
     onStageChange?.(newStages)
+    onSubStageChange?.(newSubStages)
+  }
+
+  const handleSubStageToggle = (stage: string, subStage: string) => {
+    const subStages = SUB_STAGE_MAP[stage] ?? []
+    const isSelected = selectedSubStages.includes(subStage)
+    const newSubStages = isSelected
+      ? selectedSubStages.filter(ss => ss !== subStage)
+      : [...selectedSubStages, subStage]
+
+    // Parent: checked if ALL sub stages selected, unchecked if NONE
+    const remainingForParent = subStages.filter(ss => newSubStages.includes(ss))
+    let newStages = selectedStages.filter(s => s !== stage)
+    if (remainingForParent.length === subStages.length && subStages.length > 0) {
+      newStages = [...newStages, stage]
+    }
+
+    setSelectedSubStages(newSubStages)
+    setSelectedStages(newStages)
+    onSubStageChange?.(newSubStages)
+    onStageChange?.(newStages)
+  }
+
+  const handleSubStagePanelToggle = (stage: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setSubStagePanelStage(prev => prev === stage ? null : stage)
   }
 
   const handleProductToggle = (product: string) => {
@@ -440,61 +477,29 @@ export function RooftopsTableFilters({
     onAgentChange?.(next)
   }
 
-  // More Filters handlers (applied immediately)
-  const handlePlanSelect = (planValue: string) => {
-    setSelectedPlan(planValue)
-    setShowPlanDropdown(false)
-    onPlanChange(planValue)
-  }
-
-  const handleSubTypeToggle = (subType: string) => {
-    const newSubTypes = selectedSubTypes.includes(subType)
-      ? selectedSubTypes.filter(st => st !== subType)
-      : [...selectedSubTypes, subType]
-    setSelectedSubTypes(newSubTypes)
-    onSubTypeChange?.(newSubTypes)
-  }
-
-  const handleRegionToggle = (region: string) => {
-    const newRegions = selectedRegions.includes(region)
-      ? selectedRegions.filter(r => r !== region)
-      : [...selectedRegions, region]
-    setSelectedRegions(newRegions)
-    onRegionChange?.(newRegions)
-  }
-
-  const handleHealthScoreRangeToggle = (range: string) => {
-    const newRanges = selectedHealthScoreRanges.includes(range)
-      ? selectedHealthScoreRanges.filter(r => r !== range)
-      : [...selectedHealthScoreRanges, range]
-    setSelectedHealthScoreRanges(newRanges)
-    
-    const ranges = newRanges.map(range => {
-      const [min, max] = range.split('-').map(Number)
-      return { min, max }
-    })
-    onHealthScoreChange?.(ranges)
+  const handleStudioPlanSelect = (plan: string) => {
+    setSelectedStudioPlan(plan)
+    setShowStudioPlanDropdown(false)
+    onStudioPlanChange?.(plan)
   }
 
   // Check if any more filters are active
-  const hasActiveMoreFilters = 
-    selectedPlan !== "All" || 
-    selectedSubTypes.length > 0 || 
-    selectedRegions.length > 0 || 
-    selectedHealthScoreRanges.length > 0
+  const hasActiveMoreFilters =
+    selectedTypes.length > 0 ||
+    selectedRooftopTypes.length > 0 ||
+    selectedStudioPlan !== "All"
 
   // Count active more filters
-  const activeMoreFiltersCount = 
-    (selectedPlan !== "All" ? 1 : 0) + 
-    selectedSubTypes.length + 
-    selectedRegions.length + 
-    selectedHealthScoreRanges.length
+  const activeMoreFiltersCount =
+    selectedTypes.length +
+    selectedRooftopTypes.length +
+    (selectedStudioPlan !== "All" ? 1 : 0)
 
   // Check if any filters are active (including main bar filters)
   const hasAnyActiveFilters =
-    selectedTypes.length > 0 ||
     selectedStages.length > 0 ||
-    selectedProducts.length > 0 || 
+    selectedSubStages.length > 0 ||
+    selectedProducts.length > 0 ||
     hasActiveMoreFilters
 
   // Reset all filters (both main bar and more filters)
@@ -502,22 +507,20 @@ export function RooftopsTableFilters({
     // Reset main bar filters
     setSelectedTypes([])
     setSelectedStages([])
+    setSelectedSubStages([])
     setSelectedProducts([])
     
     // Reset more filters
-    setSelectedPlan("All")
-    setSelectedSubTypes([])
-    setSelectedRegions([])
-    setSelectedHealthScoreRanges([])
-    
+    setSelectedRooftopTypes([])
+    setSelectedStudioPlan("All")
+
     // Apply all resets
     onTypeChange?.([])
     onStageChange?.([])
+    onSubStageChange?.([])
     onProductChange?.([])
-    onPlanChange("All")
-    onSubTypeChange?.([])
-    onRegionChange?.([])
-    onHealthScoreChange?.([])
+    onRooftopTypeChange?.([])
+    onStudioPlanChange?.("All")
   }
 
 
@@ -540,7 +543,7 @@ export function RooftopsTableFilters({
         if (!isClickInTypeDropdown) setShowTypeDropdown(false)
         if (!isClickInRooftopTypeDropdown) setShowRooftopTypeDropdown(false)
         if (!isClickInProductDropdown) setShowProductDropdown(false)
-        if (!isClickInStageDropdown) setShowStageDropdown(false)
+        if (!isClickInStageDropdown) { setShowStageDropdown(false); setSubStagePanelStage(null) }
         if (!isClickInViewsDropdown) setShowViewsDropdown(false)
         if (!isClickInMediaTabDropdown) setShowMediaTabDropdown(false)
         if (!isClickInAgentDropdown) setShowAgentDropdown(false)
@@ -567,12 +570,9 @@ export function RooftopsTableFilters({
       // Close modal if click is outside
       if (!isClickInMoreFilters) {
         setShowMoreFilters(false)
-        setShowPlanDropdown(false)
-        setShowSubTypeDropdown(false)
-        setShowRegionDropdown(false)
-        setShowHealthScoreDropdown(false)
-        setShowMediaDropdown(false)
-        setShowStageInMoreDropdown(false)
+        setShowTypeDropdown(false)
+        setShowRooftopTypeDropdown(false)
+        setShowStudioPlanDropdown(false)
       }
     }
 
@@ -621,30 +621,24 @@ export function RooftopsTableFilters({
   // Close internal dropdowns when clicking outside (within the panel)
   useEffect(() => {
     if (!showMoreFilters) return
-    
+
     const handleClickOutside = (event: MouseEvent) => {
       const target = event.target as Node
-      
-      const isClickInPlanDropdown = planDropdownRef.current && planDropdownRef.current.contains(target)
-      const isClickInSubTypeDropdown = subTypeDropdownRef.current && subTypeDropdownRef.current.contains(target)
-      const isClickInRegionDropdown = regionDropdownRef.current && regionDropdownRef.current.contains(target)
-      const isClickInHealthScoreDropdown = healthScoreDropdownRef.current && healthScoreDropdownRef.current.contains(target)
-      const isClickInMediaDropdown = mediaDropdownRef.current && mediaDropdownRef.current.contains(target)
-      const isClickInStageInMoreDropdown = stageInMoreDropdownRef.current && stageInMoreDropdownRef.current.contains(target)
-      
-      if (!isClickInPlanDropdown) setShowPlanDropdown(false)
-      if (!isClickInSubTypeDropdown) setShowSubTypeDropdown(false)
-      if (!isClickInRegionDropdown) setShowRegionDropdown(false)
-      if (!isClickInHealthScoreDropdown) setShowHealthScoreDropdown(false)
-      if (!isClickInMediaDropdown) setShowMediaDropdown(false)
-      if (!isClickInStageInMoreDropdown) setShowStageInMoreDropdown(false)
+
+      const isClickInTypeDropdownMore = typeDropdownRef.current && typeDropdownRef.current.contains(target)
+      const isClickInRooftopTypeDropdownMore = rooftopTypeDropdownRef.current && rooftopTypeDropdownRef.current.contains(target)
+      const isClickInStudioPlanDropdownMore = studioPlanDropdownRef.current && studioPlanDropdownRef.current.contains(target)
+
+      if (!isClickInTypeDropdownMore) setShowTypeDropdown(false)
+      if (!isClickInRooftopTypeDropdownMore) setShowRooftopTypeDropdown(false)
+      if (!isClickInStudioPlanDropdownMore) setShowStudioPlanDropdown(false)
     }
 
-    if (showPlanDropdown || showSubTypeDropdown || showRegionDropdown || showHealthScoreDropdown || showMediaDropdown || showStageInMoreDropdown) {
+    if (showTypeDropdown || showRooftopTypeDropdown || showStudioPlanDropdown) {
       document.addEventListener('mousedown', handleClickOutside)
       return () => document.removeEventListener('mousedown', handleClickOutside)
     }
-  }, [showMoreFilters, showPlanDropdown, showSubTypeDropdown, showRegionDropdown, showHealthScoreDropdown, showMediaDropdown, showStageInMoreDropdown])
+  }, [showMoreFilters, showTypeDropdown, showRooftopTypeDropdown, showStudioPlanDropdown])
 
   return (
     <>
@@ -670,95 +664,6 @@ export function RooftopsTableFilters({
 
         {/* Right side - Main filters (Stage, Product, Type), More Filters button, and account toggle */}
       <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-
-        {/* Type Filter */}
-        <div ref={typeDropdownRef} className="relative flex-shrink-0">
-          <button
-            onClick={() => {
-              setShowTypeDropdown(!showTypeDropdown)
-                setShowProductDropdown(false)
-                setShowStageDropdown(false)
-            }}
-            className="h-8 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between min-w-[100px] sm:min-w-[120px]"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className={selectedTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>Dealer Type</span>
-                        {selectedTypes.length > 0 && (
-                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
-                            {selectedTypes.length}
-                          </span>
-                        )}
-                      </span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400 ml-2">
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                    
-                    {showTypeDropdown && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] max-h-48 overflow-y-auto min-w-[180px]">
-                        {typeOptions.filter(o => o.value !== "All").map((option) => (
-                          <div
-                            key={option.value}
-                            className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                            onClick={() => handleTypeToggle(option.value)}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedTypes.includes(option.value)}
-                              onChange={() => {}}
-                              className="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">{option.label}</span>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                </div>
-
-        {/* Rooftop Type Filter */}
-        <div ref={rooftopTypeDropdownRef} className="relative flex-shrink-0">
-          <button
-            onClick={() => {
-              setShowRooftopTypeDropdown(!showRooftopTypeDropdown)
-              setShowTypeDropdown(false)
-              setShowProductDropdown(false)
-              setShowStageDropdown(false)
-            }}
-            className="h-8 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between min-w-[100px] sm:min-w-[120px]"
-          >
-            <span className="flex items-center gap-2">
-              <span className={selectedRooftopTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>Rooftop Type</span>
-              {selectedRooftopTypes.length > 0 && (
-                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
-                  {selectedRooftopTypes.length}
-                </span>
-              )}
-            </span>
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400 ml-2">
-              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-            </svg>
-          </button>
-
-          {showRooftopTypeDropdown && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] min-w-[160px]">
-              {[{ label: "Franchise", value: "franchise" }, { label: "Independent", value: "independent" }].map((option) => (
-                <div
-                  key={option.value}
-                  className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                  onClick={() => handleRooftopTypeToggle(option.value)}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selectedRooftopTypes.includes(option.value)}
-                    onChange={() => {}}
-                    className="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <span className="text-sm text-gray-700">{option.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
 
         {/* Dealer Segment Filter */}
         <div ref={dealerSegmentDropdownRef} className="relative flex-shrink-0">
@@ -852,47 +757,103 @@ export function RooftopsTableFilters({
 
         {/* Stage Filter */}
         <div ref={stageDropdownRef} className="relative flex-shrink-0">
-                    <button
+          <button
             onClick={() => {
               setShowStageDropdown(!showStageDropdown)
               setShowTypeDropdown(false)
               setShowProductDropdown(false)
+              setShowStudioPlanDropdown(false)
             }}
             className="h-8 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between min-w-[100px] sm:min-w-[120px]"
-                    >
-                      <span className="flex items-center gap-2">
-                        <span className={selectedStages.length === 0 ? "text-gray-500" : "text-gray-900"}>Stage</span>
-                        {selectedStages.length > 0 && (
-                          <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
-                            {selectedStages.length}
-                          </span>
-                        )}
-                      </span>
+          >
+            <span className="flex items-center gap-2">
+              <span className={selectedStages.length === 0 && selectedSubStages.length === 0 ? "text-gray-500" : "text-gray-900"}>Stage</span>
+              {(selectedStages.length > 0 || selectedSubStages.length > 0) && (
+                <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
+                  {selectedStages.length + selectedSubStages.length}
+                </span>
+              )}
+            </span>
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400 ml-2">
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                    
-                    {showStageDropdown && (
-            <div className="absolute top-full mt-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] max-h-60 overflow-y-auto min-w-[180px]">
-                        {stageOptions.map((option) => (
-                          <div
-                            key={option.value}
-                            className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                    onClick={() => handleStageToggle(option.value)}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={selectedStages.includes(option.value)}
-                              onChange={() => {}}
-                              className="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                            />
-                            <span className="text-sm text-gray-700">{option.label}</span>
-                          </div>
-                        ))}
+              <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          </button>
+
+          {showStageDropdown && (
+            <div className="absolute top-full mt-1 left-0 flex z-[9999]">
+              {/* Primary stage list */}
+              <div className="bg-white border border-gray-200 rounded-lg shadow-lg overflow-y-auto min-w-[200px] max-h-80">
+                {stageOptions.map((option) => {
+                  const subStages = SUB_STAGE_MAP[option.value] ?? []
+                  const selectedCount = subStages.filter(ss => selectedSubStages.includes(ss)).length
+                  const isFullyChecked = selectedStages.includes(option.value) && (subStages.length === 0 || selectedCount === subStages.length)
+                  const isIndeterminate = !isFullyChecked && (selectedStages.includes(option.value) || selectedCount > 0)
+                  const isPanelOpen = subStagePanelStage === option.value
+                  return (
+                    <div
+                      key={option.value}
+                      className={`flex items-center px-3 py-2 cursor-pointer gap-2 ${isPanelOpen ? "bg-gray-100" : "hover:bg-gray-50"}`}
+                    >
+                      <div
+                        className="flex items-center gap-2 flex-1"
+                        onClick={() => handleStageToggle(option.value)}
+                      >
+                        <div className="relative flex-shrink-0">
+                          <input
+                            type="checkbox"
+                            checked={isFullyChecked || isIndeterminate}
+                            onChange={() => {}}
+                            className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                          />
+                          {isIndeterminate && !isFullyChecked && (
+                            <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                              <span className="w-2 h-0.5 bg-blue-600 rounded" />
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-sm text-gray-700">{option.label}</span>
                       </div>
-                    )}
+                      {subStages.length > 0 && (
+                        <button
+                          onClick={(e) => handleSubStagePanelToggle(option.value, e)}
+                          className={`flex-shrink-0 w-5 h-5 flex items-center justify-center rounded hover:bg-gray-200 ${isPanelOpen ? "text-blue-600" : "text-gray-400"}`}
+                        >
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                            <path d="M4 2L7 5L4 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+
+              {/* Sub stage side panel */}
+              {subStagePanelStage && (SUB_STAGE_MAP[subStagePanelStage] ?? []).length > 0 && (
+                <div className="ml-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-y-auto min-w-[200px] max-h-80">
+                  <div className="px-3 py-2 border-b border-gray-100">
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">{subStagePanelStage}</span>
+                  </div>
+                  {(SUB_STAGE_MAP[subStagePanelStage] ?? []).map(ss => (
+                    <div
+                      key={ss}
+                      className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer gap-2"
+                      onClick={() => handleSubStageToggle(subStagePanelStage, ss)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedSubStages.includes(ss)}
+                        onChange={() => {}}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-600">{ss}</span>
+                    </div>
+                  ))}
                 </div>
+              )}
+            </div>
+          )}
+        </div>
 
           {/* Media Filter — Studio AI tab only */}
           {activeTab === "studio_ai" && (
@@ -901,7 +862,7 @@ export function RooftopsTableFilters({
                 onClick={() => {
                   setShowMediaTabDropdown(!showMediaTabDropdown)
                   setShowTypeDropdown(false)
-                  setShowStageDropdown(false)
+                  setShowStageDropdown(false); setSubStagePanelStage(null)
                   setShowRooftopTypeDropdown(false)
                 }}
                 className="h-8 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between min-w-[100px] sm:min-w-[120px]"
@@ -947,7 +908,7 @@ export function RooftopsTableFilters({
                 onClick={() => {
                   setShowAgentDropdown(!showAgentDropdown)
                   setShowTypeDropdown(false)
-                  setShowStageDropdown(false)
+                  setShowStageDropdown(false); setSubStagePanelStage(null)
                   setShowRooftopTypeDropdown(false)
                 }}
                 className="h-8 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between min-w-[100px] sm:min-w-[120px]"
@@ -1000,7 +961,7 @@ export function RooftopsTableFilters({
           </button>
 
           {/* More Filters Button */}
-          <div className="relative flex-shrink-0 hidden" ref={moreFiltersRef}>
+          <div className="relative flex-shrink-0" ref={moreFiltersRef}>
             <button
               onClick={() => setShowMoreFilters(!showMoreFilters)}
               className={`h-8 px-3 border border-gray-300 rounded-lg text-sm bg-white hover:bg-gray-50 flex items-center gap-2 ${
@@ -1026,187 +987,48 @@ export function RooftopsTableFilters({
                   <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
                 </div>
 
-                {/* Filters Content - 2 Column Grid */}
+                {/* Filters Content */}
                 <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-6">
-                    {/* Type Filter */}
+
+                    {/* Dealer Type Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Type</label>
-                      <div ref={planDropdownRef} className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Dealer Type</label>
+                      <div ref={typeDropdownRef} className="relative">
                         <button
                           onClick={() => {
-                            setShowPlanDropdown(!showPlanDropdown)
-                            setShowSubTypeDropdown(false)
-                            setShowRegionDropdown(false)
-                            setShowHealthScoreDropdown(false)
-                            setShowMediaDropdown(false)
-                            setShowStageInMoreDropdown(false)
+                            setShowTypeDropdown(!showTypeDropdown)
+                            setShowRooftopTypeDropdown(false)
+                            setShowStudioPlanDropdown(false)
                           }}
                           className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
                         >
-                          <span className={selectedPlan === "All" ? "text-gray-500" : "text-gray-900"}>
-                            {selectedPlan === "All" ? "All" : selectedPlan}
+                          <span className="flex items-center gap-2">
+                            <span className={selectedTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>
+                              {selectedTypes.length === 0 ? "Select dealer types" : `${selectedTypes.length} selected`}
+                            </span>
+                            {selectedTypes.length > 0 && (
+                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
+                                {selectedTypes.length}
+                              </span>
+                            )}
                           </span>
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
                             <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
-                        
-                        {showPlanDropdown && (
+
+                        {showTypeDropdown && (
                           <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-48 overflow-y-auto">
-                            {["All", "Essential", "Growth", "Comprehensive"].map((option) => (
-                              <button
-                                key={option}
-                                onClick={() => handlePlanSelect(option)}
-                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 ${
-                                  selectedPlan === option ? "bg-blue-50 text-blue-600" : "text-gray-700"
-                                }`}
-                              >
-                                {option}
-                              </button>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Sub Type Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Sub Type</label>
-                      <div ref={subTypeDropdownRef} className="relative">
-                        <button
-                          onClick={() => {
-                            setShowSubTypeDropdown(!showSubTypeDropdown)
-                            setShowPlanDropdown(false)
-                            setShowRegionDropdown(false)
-                            setShowHealthScoreDropdown(false)
-                            setShowMediaDropdown(false)
-                            setShowStageInMoreDropdown(false)
-                          }}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className={selectedSubTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>
-                            {selectedSubTypes.length === 0 ? "Select sub types" : `${selectedSubTypes.length} selected`}
-                          </span>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        
-                        {showSubTypeDropdown && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
-                            {subTypeOptions.map((option) => (
+                            {typeOptions.filter(o => o.value !== "All").map((option) => (
                               <div
                                 key={option.value}
                                 className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                                onClick={() => handleSubTypeToggle(option.value)}
+                                onClick={() => handleTypeToggle(option.value)}
                               >
                                 <input
                                   type="checkbox"
-                                  checked={selectedSubTypes.includes(option.value)}
-                                  onChange={() => {}}
-                                  className="mr-3 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
-                                />
-                                <span className="text-sm text-gray-700">{option.label}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Media Filter (Product filter for More Filters panel) */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Media</label>
-                      <div ref={mediaDropdownRef} className="relative">
-                        <button
-                          onClick={() => {
-                            setShowMediaDropdown(!showMediaDropdown)
-                            setShowPlanDropdown(false)
-                            setShowSubTypeDropdown(false)
-                            setShowRegionDropdown(false)
-                            setShowHealthScoreDropdown(false)
-                            setShowStageInMoreDropdown(false)
-                          }}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className="text-gray-500">Select media</span>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        
-                        {showMediaDropdown && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
-                            <div className="px-3 py-2 text-sm text-gray-500">Media options coming soon...</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Stage Filter (in More Filters) */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Stage</label>
-                      <div ref={stageInMoreDropdownRef} className="relative">
-                        <button
-                          onClick={() => {
-                            setShowStageInMoreDropdown(!showStageInMoreDropdown)
-                            setShowPlanDropdown(false)
-                            setShowSubTypeDropdown(false)
-                            setShowRegionDropdown(false)
-                            setShowHealthScoreDropdown(false)
-                            setShowMediaDropdown(false)
-                          }}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className="text-gray-500">Select stages</span>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        
-                        {showStageInMoreDropdown && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
-                            <div className="px-3 py-2 text-sm text-gray-500">Stage options coming soon...</div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    {/* Region Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
-                      <div ref={regionDropdownRef} className="relative">
-                        <button
-                          onClick={() => {
-                            setShowRegionDropdown(!showRegionDropdown)
-                            setShowPlanDropdown(false)
-                            setShowSubTypeDropdown(false)
-                            setShowHealthScoreDropdown(false)
-                            setShowMediaDropdown(false)
-                            setShowStageInMoreDropdown(false)
-                          }}
-                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className={selectedRegions.length === 0 ? "text-gray-500" : "text-gray-900"}>
-                            {selectedRegions.length === 0 ? "Select regions" : `${selectedRegions.length} selected`}
-                          </span>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                        </button>
-                        
-                        {showRegionDropdown && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
-                            {regionOptions.map((option) => (
-                              <div
-                                key={option.value}
-                                className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                                onClick={() => handleRegionToggle(option.value)}
-                              >
-                                <input
-                                  type="checkbox"
-                                  checked={selectedRegions.includes(option.value)}
+                                  checked={selectedTypes.includes(option.value)}
                                   onChange={() => {}}
                                   className="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
@@ -1218,75 +1040,102 @@ export function RooftopsTableFilters({
                       </div>
                     </div>
 
-        {/* Plan Filter */}
+                    {/* Rooftop Type Filter */}
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Plan</label>
-                      <div className="relative">
-                    <button
-                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
-                        >
-                          <span className="text-gray-500">All</span>
-                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
-                        <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                      </div>
-                  </div>
-
-                    {/* Health Score Filter */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">Health Score</label>
-                      <div ref={healthScoreDropdownRef} className="relative">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Rooftop Type</label>
+                      <div ref={rooftopTypeDropdownRef} className="relative">
                         <button
                           onClick={() => {
-                            setShowHealthScoreDropdown(!showHealthScoreDropdown)
-                            setShowPlanDropdown(false)
-                            setShowSubTypeDropdown(false)
-                            setShowRegionDropdown(false)
-                            setShowMediaDropdown(false)
-                            setShowStageInMoreDropdown(false)
+                            setShowRooftopTypeDropdown(!showRooftopTypeDropdown)
+                            setShowTypeDropdown(false)
+                            setShowStudioPlanDropdown(false)
                           }}
                           className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
                         >
-                          <span className={selectedHealthScoreRanges.length === 0 ? "text-gray-500" : "text-gray-900"}>
-                            {selectedHealthScoreRanges.length === 0 ? "Select ranges" : `${selectedHealthScoreRanges.length} selected`}
+                          <span className="flex items-center gap-2">
+                            <span className={selectedRooftopTypes.length === 0 ? "text-gray-500" : "text-gray-900"}>
+                              {selectedRooftopTypes.length === 0 ? "Select rooftop types" : `${selectedRooftopTypes.length} selected`}
+                            </span>
+                            {selectedRooftopTypes.length > 0 && (
+                              <span className="inline-flex items-center justify-center w-5 h-5 text-xs font-medium text-white bg-blue-600 rounded-full">
+                                {selectedRooftopTypes.length}
+                              </span>
+                            )}
                           </span>
                           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
                             <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                         </button>
-                        
-                        {showHealthScoreDropdown && (
-                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-60 overflow-y-auto">
-                            {healthScoreRangeOptions.map((option) => (
+
+                        {showRooftopTypeDropdown && (
+                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] min-w-[160px]">
+                            {[{ label: "Franchise", value: "franchise" }, { label: "Independent", value: "independent" }].map((option) => (
                               <div
                                 key={option.value}
                                 className="flex items-center px-3 py-2 hover:bg-gray-50 cursor-pointer"
-                                onClick={() => handleHealthScoreRangeToggle(option.value)}
+                                onClick={() => handleRooftopTypeToggle(option.value)}
                               >
                                 <input
                                   type="checkbox"
-                                  checked={selectedHealthScoreRanges.includes(option.value)}
+                                  checked={selectedRooftopTypes.includes(option.value)}
                                   onChange={() => {}}
-                                  className={`mr-3 h-4 w-4 border-gray-300 rounded focus:ring-2 ${
-                                    option.value === '0-3' ? 'text-red-600 focus:ring-red-500' :
-                                    option.value === '4-6' ? 'text-yellow-600 focus:ring-yellow-500' :
-                                    option.value === '7-8' ? 'text-blue-600 focus:ring-blue-500' :
-                                    'text-green-600 focus:ring-green-500'
-                                  }`}
+                                  className="mr-3 h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                                 />
-                                <span className={`text-sm ${
-                                  option.value === '0-3' ? 'text-red-700' :
-                                  option.value === '4-6' ? 'text-yellow-700' :
-                                  option.value === '7-8' ? 'text-blue-700' :
-                                  'text-green-700'
-                                }`}>{option.label}</span>
+                                <span className="text-sm text-gray-700">{option.label}</span>
                               </div>
                             ))}
                           </div>
                         )}
                       </div>
                     </div>
+
+                    {/* Studio Plan Filter */}
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">Studio Plan</label>
+                      <div ref={studioPlanDropdownRef} className="relative">
+                        <button
+                          onClick={() => {
+                            setShowStudioPlanDropdown(!showStudioPlanDropdown)
+                            setShowTypeDropdown(false)
+                            setShowRooftopTypeDropdown(false)
+                          }}
+                          className="w-full h-10 px-3 border border-gray-300 rounded-lg text-sm text-left bg-white hover:bg-gray-50 flex items-center justify-between"
+                        >
+                          <span className={selectedStudioPlan === "All" ? "text-gray-500" : "text-gray-900"}>
+                            {selectedStudioPlan === "All" ? "All plans" : selectedStudioPlan}
+                          </span>
+                          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-gray-400">
+                            <path d="M4 6L8 10L12 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          </svg>
+                        </button>
+
+                        {showStudioPlanDropdown && (
+                          <div className="absolute top-full mt-1 left-0 right-0 bg-white border border-gray-200 rounded-lg shadow-lg z-[10000] max-h-48 overflow-y-auto">
+                            {["All", "Pro", "Lite"].map((option) => (
+                              <button
+                                key={option}
+                                onClick={() => handleStudioPlanSelect(option)}
+                                className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 flex items-center gap-2 ${
+                                  selectedStudioPlan === option ? "bg-blue-50 text-blue-600" : "text-gray-700"
+                                }`}
+                              >
+                                {option !== "All" && (
+                                  <span className={`inline-flex items-center px-2 py-0.5 rounded-[6px] text-xs font-medium ${
+                                    option === "Pro"
+                                      ? "bg-purple-100 text-purple-700 border border-purple-200"
+                                      : "bg-sky-100 text-sky-700 border border-sky-200"
+                                  }`}>
+                                    {option}
+                                  </span>
+                                )}
+                                {option === "All" && <span>All plans</span>}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
                   </div>
                 </div>
               </div>

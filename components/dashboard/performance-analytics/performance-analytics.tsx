@@ -865,6 +865,31 @@ export const PeriodCard = ({
   </div>
 )
 
+export const CountsCard = ({
+  enterpriseCount,
+  rooftopCount,
+}: {
+  enterpriseCount: number
+  rooftopCount: number
+}) => (
+  <div className="inline-flex bg-white border border-gray-200 rounded-2xl overflow-hidden flex-col">
+    <div className="bg-gray-100 px-4 py-1 w-full">
+      <span className="text-[11px] text-gray-500 font-normal">Accounts</span>
+    </div>
+    <div className="flex items-center gap-0 px-4 py-3">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[15px] font-semibold text-gray-500">Enterprises:</span>
+        <span className="text-[22px] font-bold leading-tight text-gray-700">{enterpriseCount}</span>
+      </div>
+      <div className="w-px self-stretch bg-gray-200 mx-4" />
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-[15px] font-semibold text-gray-500">Rooftops:</span>
+        <span className="text-[22px] font-bold leading-tight text-gray-700">{rooftopCount}</span>
+      </div>
+    </div>
+  </div>
+)
+
 // ========== MAIN COMPONENT ==========
 export const PerformanceAnalytics: React.FC<PerformanceAnalyticsProps> = ({
   title = "Performance Overview",

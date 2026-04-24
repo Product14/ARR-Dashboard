@@ -1,7 +1,7 @@
 "use client"
 
-import { useState, useMemo, Fragment } from "react"
-import { SnapshotCard, PeriodCard } from "@/components/dashboard/performance-analytics/performance-analytics"
+import { useState, useMemo } from "react"
+import { SnapshotCard, PeriodCard, CountsCard } from "@/components/dashboard/performance-analytics/performance-analytics"
 import { RooftopsTableFilters } from "./rooftops-table-filters"
 import { RooftopsTableHeader } from "./rooftops-table-header"
 
@@ -11,6 +11,14 @@ const STAGE_COLORS = {
   onboarding: "#f59e0b",
   churned: "#ef4444",
   plg: "#3b82f6",
+}
+
+const SUB_STAGE_MAP: Record<string, string[]> = {
+  "Contract-Initiated": [],
+  "Contracted":  ["Meet Pending", "Meet Scheduled", "Meet Done", "Meet Cancelled", "Meet Rescheduled"],
+  "Onboarding":  ["OB To Be Scheduled", "In Implementation", "Under Review", "Client Unresponsive", "CSM Handover Pending", "OB Live"],
+  "Live":        ["OB Live"],
+  "Churned":     ["Sales Drop off", "OB Drop off", "Drop off"],
 }
 
 interface StageSegment { color: string; count: number }
@@ -23,6 +31,7 @@ interface SubProductRow {
   grr: number | null
   nrr: number | null
   stages: StageSegment[]
+  subStage?: string
 }
 
 interface ProductRow {
@@ -38,6 +47,8 @@ interface ProductRow {
   nrr: number | null
   stages: StageSegment[]
   subProducts?: SubProductRow[]
+  subStage?: string
+  plan?: "Pro" | "Lite"
 }
 
 interface RooftopRow {
@@ -53,6 +64,7 @@ interface RooftopRow {
   grr: number | null
   nrr: number | null
   stages: StageSegment[]
+  subStage?: string
 }
 
 interface EnterpriseRow {
@@ -72,6 +84,7 @@ interface EnterpriseRow {
   grr: number
   nrr: number
   stages: StageSegment[]
+  subStage?: string
 }
 
 const enterpriseData: EnterpriseRow[] = [
@@ -91,8 +104,10 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 74.3,
     nrr: 79.4,
     stages: [
-      { color: STAGE_COLORS.contracted, count: 4 },
-      { color: STAGE_COLORS.live, count: 3 },
+      { color: STAGE_COLORS.contracted, count: 2 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
+      { color: STAGE_COLORS.live, count: 1 },
+      { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
       {
@@ -106,9 +121,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 115.4,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Scheduled",
         products: [
-          { id: "p-1", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$25K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
+          { id: "p-1", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$25K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-1a", name: "Image", carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-1b", name: "Video Tour", carr: "$10K", larr: "$9K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -125,9 +141,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 104.7,
-        stages: [{ color: STAGE_COLORS.live, count: 3 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "In Implementation",
         products: [
-          { id: "p-2", name: "Studio AI", icon: "🖼️", planCount: 3, carr: "$25K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 3 }], subProducts: [
+          { id: "p-2", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 3, carr: "$25K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 3 }], subProducts: [
             { id: "sp-2a", name: "Image", carr: "$10K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-2b", name: "Video Tour", carr: "$8K", larr: "$8K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-2c", name: "360 Spin", carr: "$7K", larr: "$6K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -146,6 +163,7 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 102.6,
         stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
           { id: "p-3", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$24K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-3a", name: "Service IB", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -164,9 +182,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 110.8,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "CSM Handover Pending",
         products: [
-          { id: "p-4", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$23K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-4", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$23K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
       {
@@ -180,16 +199,14 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 105.3,
-        stages: [
-          { color: STAGE_COLORS.contracted, count: 2 },
-          { color: STAGE_COLORS.live, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Pending",
         products: [
           { id: "p-5", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$12K", carrDelta: "+$1K", larr: "$6K", larrDelta: "+$1K", grr: 100.0, nrr: 100.0, stages: [{ color: STAGE_COLORS.contracted, count: 1 }, { color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-5a", name: "Service IB", carr: "$6K", larr: "$3K", grr: 100.0, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
             { id: "sp-5b", name: "Service OB", carr: "$6K", larr: "$3K", grr: 100.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
-          { id: "p-6", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$10K", carrDelta: "+$1K", larr: "$5K", larrDelta: "+$1K", grr: 100.0, nrr: 111.1, stages: [{ color: STAGE_COLORS.contracted, count: 1 }, { color: STAGE_COLORS.live, count: 1 }], subProducts: [
+          { id: "p-6", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$10K", carrDelta: "+$1K", larr: "$5K", larrDelta: "+$1K", grr: 100.0, nrr: 111.1, stages: [{ color: STAGE_COLORS.contracted, count: 1 }, { color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-6a", name: "Image", carr: "$6K", larr: "$3K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
             { id: "sp-6b", name: "360 Spin", carr: "$5K", larr: "$2K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -206,9 +223,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Drop off",
         products: [
-          { id: "p-7", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$22K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
+          { id: "p-7", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$22K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-7a", name: "Image", carr: "$22K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
         ],
@@ -222,7 +240,8 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$8K",
         grr: null,
         nrr: null,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Done",
         products: [],
       },
     ],
@@ -243,7 +262,8 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 92.5,
     nrr: 101.2,
     stages: [
-      { color: STAGE_COLORS.live, count: 3 },
+      { color: STAGE_COLORS.live, count: 1 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
       { color: STAGE_COLORS.contracted, count: 1 },
       { color: STAGE_COLORS.churned, count: 1 },
     ],
@@ -259,9 +279,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 107.8,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-8", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$30K", larr: "$28K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-8", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$30K", larr: "$28K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-8a", name: "Image", carr: "$17K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-8b", name: "Video Tour", carr: "$14K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -278,9 +299,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 103.1,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "Under Review",
         products: [
-          { id: "p-9", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$27K", larr: "$25K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-9", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$27K", larr: "$25K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
       {
@@ -294,16 +316,14 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 112.3,
-        stages: [
-          { color: STAGE_COLORS.live, count: 2 },
-          { color: STAGE_COLORS.contracted, count: 1 },
-        ],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Done",
         products: [
           { id: "p-10", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$11K", carrDelta: "+$1K", larr: "$10K", larrDelta: "+$1K", grr: 100.0, nrr: 108.0, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-10a", name: "Sales IB", carr: "$6K", larr: "$6K", grr: 100.0, nrr: 108.0, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-10b", name: "Sales OB", carr: "$5K", larr: "$5K", grr: 100.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
-          { id: "p-11", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$13K", carrDelta: "+$2K", larr: "$12K", larrDelta: "+$1K", grr: 100.0, nrr: 116.0, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.contracted, count: 1 }], subProducts: [
+          { id: "p-11", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$13K", carrDelta: "+$2K", larr: "$12K", larrDelta: "+$1K", grr: 100.0, nrr: 116.0, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.contracted, count: 1 }], subProducts: [
             { id: "sp-11a", name: "Image", carr: "$7K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-11b", name: "Video Tour", carr: "$6K", larr: "$6K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
           ]},
@@ -319,8 +339,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 0.0,
         nrr: null,
         stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "OB Drop off",
         products: [
-          { id: "p-12", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$20K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+          { id: "p-12", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$20K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
             { id: "sp-12a", name: "Image", carr: "$20K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
           ]},
         ],
@@ -336,9 +357,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "OB To Be Scheduled",
         products: [
-          { id: "p-13", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$23K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-13", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$23K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-13a", name: "Image", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-13b", name: "360 Spin", carr: "$10K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -362,8 +384,9 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 88.4,
     nrr: 94.7,
     stages: [
-      { color: STAGE_COLORS.live, count: 2 },
+      { color: STAGE_COLORS.live, count: 1 },
       { color: STAGE_COLORS.onboarding, count: 1 },
+      { color: STAGE_COLORS.contracted, count: 1 },
       { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
@@ -378,9 +401,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$3K",
         grr: 100.0,
         nrr: 119.4,
-        stages: [{ color: STAGE_COLORS.live, count: 3 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-14", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$20K", carrDelta: "+$2K", larr: "$19K", larrDelta: "+$2K", grr: 100.0, nrr: 115.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-14", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$20K", carrDelta: "+$2K", larr: "$19K", larrDelta: "+$2K", grr: 100.0, nrr: 115.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-14a", name: "Image", carr: "$11K", larr: "$11K", grr: 100.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-14b", name: "Video Tour", carr: "$8K", larr: "$8K", grr: 100.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -401,7 +425,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 106.2,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "In Implementation",
         products: [
           { id: "p-16", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$28K", larr: "$26K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-16a", name: "Service IB", carr: "$9K", larr: "$9K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -419,12 +444,10 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$16K",
         grr: 64.6,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.onboarding, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Rescheduled",
         products: [
-          { id: "p-17", name: "Studio AI", icon: "🖼️", planCount: 3, carr: "$25K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
+          { id: "p-17", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 3, carr: "$25K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
             { id: "sp-17a", name: "Image", carr: "$10K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-17b", name: "Video Tour", carr: "$8K", larr: "$5K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
             { id: "sp-17c", name: "360 Spin", carr: "$6K", larr: "$4K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
@@ -442,9 +465,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Sales Drop off",
         products: [
-          { id: "p-18", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-18", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
     ],
@@ -465,7 +489,7 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 76.5,
     nrr: 82.1,
     stages: [
-      { color: STAGE_COLORS.live, count: 1 },
+      { color: STAGE_COLORS.onboarding, count: 1 },
       { color: STAGE_COLORS.contracted, count: 1 },
     ],
     rooftops: [
@@ -480,12 +504,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 77.8,
         nrr: 88.9,
-        stages: [
-          { color: STAGE_COLORS.live, count: 2 },
-          { color: STAGE_COLORS.churned, count: 1 },
-        ],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "Client Unresponsive",
         products: [
-          { id: "p-19", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$19K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }, { color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+          { id: "p-19", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$19K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }, { color: STAGE_COLORS.churned, count: 1 }], subProducts: [
             { id: "sp-19a", name: "Image", carr: "$10K", larr: "$8K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-19b", name: "Video Tour", carr: "$8K", larr: "$6K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
           ]},
@@ -502,16 +524,14 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 75.0,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.contracted, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Scheduled",
         products: [
           { id: "p-20", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$9K", carrDelta: "+$1K", larr: "$7K", larrDelta: "+$1K", grr: 77.8, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-20a", name: "Sales IB", carr: "$5K", larr: "$4K", grr: 80.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-20b", name: "Sales OB", carr: "$4K", larr: "$3K", grr: 75.0, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
-          { id: "p-21", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$7K", carrDelta: "+$2K", larr: "$5K", larrDelta: "+$1K", grr: 71.4, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 2 }] },
+          { id: "p-21", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$7K", carrDelta: "+$2K", larr: "$5K", larrDelta: "+$1K", grr: 71.4, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 2 }] },
         ],
       },
     ],
@@ -532,9 +552,10 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 96.2,
     nrr: 108.5,
     stages: [
-      { color: STAGE_COLORS.live, count: 4 },
+      { color: STAGE_COLORS.live, count: 2 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
       { color: STAGE_COLORS.contracted, count: 1 },
-      { color: STAGE_COLORS.onboarding, count: 1 },
+      { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
       {
@@ -548,9 +569,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$4K",
         grr: 100.0,
         nrr: 122.9,
-        stages: [{ color: STAGE_COLORS.live, count: 4 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-22", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$22K", carrDelta: "+$2K", larr: "$21K", larrDelta: "+$2K", grr: 100.0, nrr: 118.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-22", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$22K", carrDelta: "+$2K", larr: "$21K", larrDelta: "+$2K", grr: 100.0, nrr: 118.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-22a", name: "Image", carr: "$12K", larr: "$12K", grr: 100.0, nrr: 120.0, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-22b", name: "360 Spin", carr: "$9K", larr: "$9K", grr: 100.0, nrr: 115.0, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -571,9 +593,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 105.8,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-24", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$29K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-24", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$29K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-24a", name: "Image", carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-24b", name: "Video Tour", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -590,7 +613,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 101.7,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "CSM Handover Pending",
         products: [
           { id: "p-25", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$26K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-25a", name: "Service IB", carr: "$15K", larr: "$14K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -609,9 +633,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Done",
         products: [
-          { id: "p-26", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$24K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }] },
+          { id: "p-26", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$24K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }] },
         ],
       },
       {
@@ -623,12 +648,10 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$15K",
         grr: 67.4,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.onboarding, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "In Implementation",
         products: [
-          { id: "p-27", name: "Studio AI", icon: "🖼️", planCount: 3, carr: "$22K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
+          { id: "p-27", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 3, carr: "$22K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
             { id: "sp-27a", name: "Image", carr: "$9K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-27b", name: "Video Tour", carr: "$7K", larr: "$5K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
             { id: "sp-27c", name: "360 Spin", carr: "$6K", larr: "$4K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
@@ -646,7 +669,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Drop off",
         products: [
           { id: "p-28", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$20K", larr: "$18K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }], subProducts: [
             { id: "sp-28a", name: "Service OB", carr: "$10K", larr: "$9K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -672,9 +696,10 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 98.1,
     nrr: 112.4,
     stages: [
-      { color: STAGE_COLORS.live, count: 6 },
-      { color: STAGE_COLORS.contracted, count: 1 },
-      { color: STAGE_COLORS.onboarding, count: 1 },
+      { color: STAGE_COLORS.live, count: 3 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
+      { color: STAGE_COLORS.contracted, count: 2 },
+      { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
       {
@@ -688,9 +713,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 117.2,
-        stages: [{ color: STAGE_COLORS.live, count: 3 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-29", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$21K", carrDelta: "+$2K", larr: "$20K", larrDelta: "+$1K", grr: 100.0, nrr: 114.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-29", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$21K", carrDelta: "+$2K", larr: "$20K", larrDelta: "+$1K", grr: 100.0, nrr: 114.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-29a", name: "Image", carr: "$11K", larr: "$11K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-29b", name: "360 Spin", carr: "$9K", larr: "$9K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -711,9 +737,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$3K",
         grr: 100.0,
         nrr: 120.0,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Pending",
         products: [
-          { id: "p-31", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$33K", larr: "$31K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-31", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$33K", larr: "$31K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-31a", name: "Image", carr: "$18K", larr: "$17K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-31b", name: "Video Tour", carr: "$15K", larr: "$14K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -730,7 +757,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 109.3,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "Under Review",
         products: [
           { id: "p-32", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$31K", larr: "$29K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-32a", name: "Service IB", carr: "$10K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -751,8 +779,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 105.1,
         stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-33", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-33", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           { id: "p-34", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$11K", larr: "$11K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
@@ -765,12 +794,10 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$17K",
         grr: 68.1,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.onboarding, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "OB To Be Scheduled",
         products: [
-          { id: "p-35", name: "Studio AI", icon: "🖼️", planCount: 3, carr: "$24K", larr: "$17K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
+          { id: "p-35", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 3, carr: "$24K", larr: "$17K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
             { id: "sp-35a", name: "Image", carr: "$9K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-35b", name: "Video Tour", carr: "$8K", larr: "$5K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
             { id: "sp-35c", name: "360 Spin", carr: "$7K", larr: "$4K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
@@ -788,9 +815,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "OB Drop off",
         products: [
-          { id: "p-36", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$23K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
+          { id: "p-36", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$23K", larr: "$22K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
         ],
       },
       {
@@ -804,7 +832,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 107.7,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Scheduled",
         products: [
           { id: "p-37", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-37a", name: "Sales IB", carr: "$11K", larr: "$11K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -824,8 +853,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 100.0,
         stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-38", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$20K", larr: "$19K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-38", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$20K", larr: "$19K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
     ],
@@ -846,7 +876,7 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 75.5,
     nrr: 80.2,
     stages: [
-      { color: STAGE_COLORS.live, count: 1 },
+      { color: STAGE_COLORS.onboarding, count: 1 },
       { color: STAGE_COLORS.churned, count: 1 },
       { color: STAGE_COLORS.contracted, count: 1 },
     ],
@@ -862,9 +892,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$3K",
         grr: 86.4,
         nrr: 95.5,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "In Implementation",
         products: [
-          { id: "p-39", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$14K", carrDelta: "+$3K", larr: "$11K", larrDelta: "+$2K", grr: 84.6, nrr: 95.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-39", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$14K", carrDelta: "+$3K", larr: "$11K", larrDelta: "+$2K", grr: 84.6, nrr: 95.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-39a", name: "Image", carr: "$7K", larr: "$6K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-39b", name: "Video Tour", carr: "$6K", larr: "$5K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -884,6 +915,7 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 0.0,
         nrr: null,
         stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Sales Drop off",
         products: [
           { id: "p-41", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$17K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
             { id: "sp-41a", name: "Service IB", carr: "$9K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
@@ -903,8 +935,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 100.0,
         stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Cancelled",
         products: [
-          { id: "p-42", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$11K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
+          { id: "p-42", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$11K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
         ],
       },
     ],
@@ -925,8 +958,11 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 99.2,
     nrr: 116.8,
     stages: [
-      { color: STAGE_COLORS.live, count: 7 },
+      { color: STAGE_COLORS.live, count: 3 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
       { color: STAGE_COLORS.contracted, count: 2 },
+      { color: STAGE_COLORS.churned, count: 1 },
+      { color: STAGE_COLORS.plg, count: 1 },
     ],
     rooftops: [
       {
@@ -940,9 +976,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$4K",
         grr: 100.0,
         nrr: 126.0,
-        stages: [{ color: STAGE_COLORS.live, count: 4 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-43", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$23K", carrDelta: "+$3K", larr: "$22K", larrDelta: "+$2K", grr: 100.0, nrr: 123.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-43", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$23K", carrDelta: "+$3K", larr: "$22K", larrDelta: "+$2K", grr: 100.0, nrr: 123.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-43a", name: "Image", carr: "$12K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-43b", name: "360 Spin", carr: "$10K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -963,9 +1000,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$3K",
         grr: 100.0,
         nrr: 118.5,
-        stages: [{ color: STAGE_COLORS.live, count: 3 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Scheduled",
         products: [
-          { id: "p-45", name: "Studio AI", icon: "🖼️", planCount: 3, carr: "$37K", larr: "$35K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 3 }], subProducts: [
+          { id: "p-45", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 3, carr: "$37K", larr: "$35K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 3 }], subProducts: [
             { id: "sp-45a", name: "Image", carr: "$14K", larr: "$13K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-45b", name: "Video Tour", carr: "$12K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-45c", name: "360 Spin", carr: "$11K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -983,7 +1021,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 111.3,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "OB To Be Scheduled",
         products: [
           { id: "p-46", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$34K", larr: "$32K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-46a", name: "Sales IB", carr: "$18K", larr: "$17K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -1002,9 +1041,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 108.0,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-47", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$17K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-47", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$17K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           { id: "p-48", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$14K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
@@ -1019,9 +1059,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 105.9,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Done",
         products: [
-          { id: "p-49", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$28K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-49", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$28K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-49a", name: "Image", carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-49b", name: "Video Tour", carr: "$12K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -1038,7 +1079,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "Client Unresponsive",
         products: [
           { id: "p-50", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$25K", larr: "$24K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }], subProducts: [
             { id: "sp-50a", name: "Service OB", carr: "$14K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
@@ -1057,9 +1099,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 109.1,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "OB Drop off",
         products: [
-          { id: "p-51", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$24K", larr: "$23K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-51", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$24K", larr: "$23K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-51a", name: "Image", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-51b", name: "360 Spin", carr: "$11K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -1077,8 +1120,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 100.0,
         stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-52", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$22K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-52", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$22K", larr: "$21K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
       {
@@ -1092,7 +1136,7 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        stages: [{ color: STAGE_COLORS.plg, count: 1 }],
         products: [
           { id: "p-53", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
         ],
@@ -1115,8 +1159,8 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 85.9,
     nrr: 97.3,
     stages: [
-      { color: STAGE_COLORS.live, count: 2 },
-      { color: STAGE_COLORS.onboarding, count: 1 },
+      { color: STAGE_COLORS.live, count: 1 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
       { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
@@ -1131,9 +1175,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 113.5,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-54", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$29K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-54", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$29K", larr: "$27K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-54a", name: "Image", carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-54b", name: "Video Tour", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -1150,7 +1195,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 106.7,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "Under Review",
         products: [
           { id: "p-55", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$25K", larr: "$23K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-55a", name: "Service IB", carr: "$14K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -1167,13 +1213,10 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$12K",
         grr: 54.8,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.onboarding, count: 2 },
-          { color: STAGE_COLORS.churned, count: 1 },
-        ],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "In Implementation",
         products: [
-          { id: "p-56", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$12K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }, { color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+          { id: "p-56", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$12K", larr: "$7K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }, { color: STAGE_COLORS.churned, count: 1 }], subProducts: [
             { id: "sp-56a", name: "Image", carr: "$7K", larr: "$4K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.onboarding, count: 1 }] },
             { id: "sp-56b", name: "360 Spin", carr: "$6K", larr: "$3K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
           ]},
@@ -1193,8 +1236,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 0.0,
         nrr: null,
         stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Drop off",
         products: [
-          { id: "p-58", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$19K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+          { id: "p-58", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$19K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
             { id: "sp-58a", name: "Image", carr: "$10K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
             { id: "sp-58b", name: "Video Tour", carr: "$8K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
           ]},
@@ -1218,9 +1262,10 @@ const enterpriseData: EnterpriseRow[] = [
     grr: 97.4,
     nrr: 114.2,
     stages: [
-      { color: STAGE_COLORS.live, count: 5 },
-      { color: STAGE_COLORS.contracted, count: 1 },
-      { color: STAGE_COLORS.onboarding, count: 1 },
+      { color: STAGE_COLORS.live, count: 2 },
+      { color: STAGE_COLORS.contracted, count: 2 },
+      { color: STAGE_COLORS.onboarding, count: 2 },
+      { color: STAGE_COLORS.churned, count: 1 },
     ],
     rooftops: [
       {
@@ -1234,9 +1279,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$4K",
         grr: 100.0,
         nrr: 124.7,
-        stages: [{ color: STAGE_COLORS.live, count: 3 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
-          { id: "p-59", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$23K", carrDelta: "+$3K", larr: "$22K", larrDelta: "+$3K", grr: 100.0, nrr: 121.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-59", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 2, carr: "$23K", carrDelta: "+$3K", larr: "$22K", larrDelta: "+$3K", grr: 100.0, nrr: 121.0, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-59a", name: "Image", carr: "$13K", larr: "$12K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-59b", name: "Video Tour", carr: "$10K", larr: "$10K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -1257,9 +1303,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 112.7,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Rescheduled",
         products: [
-          { id: "p-61", name: "Studio AI", icon: "🖼️", planCount: 2, carr: "$34K", larr: "$33K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
+          { id: "p-61", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 2, carr: "$34K", larr: "$33K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-61a", name: "Image", carr: "$19K", larr: "$18K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
             { id: "sp-61b", name: "360 Spin", carr: "$15K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           ]},
@@ -1276,7 +1323,8 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 108.9,
-        stages: [{ color: STAGE_COLORS.live, count: 2 }],
+        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        subStage: "OB Live",
         products: [
           { id: "p-62", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$31K", larr: "$29K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 2 }], subProducts: [
             { id: "sp-62a", name: "Service OB", carr: "$17K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -1295,9 +1343,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$2K",
         grr: 100.0,
         nrr: 105.3,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "CSM Handover Pending",
         products: [
-          { id: "p-63", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-63", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$16K", larr: "$15K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
           { id: "p-64", name: "Vini AI", icon: "🌿", planCount: 1, carr: "$12K", larr: "$11K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
@@ -1313,8 +1362,9 @@ const enterpriseData: EnterpriseRow[] = [
         grr: 100.0,
         nrr: 100.0,
         stages: [{ color: STAGE_COLORS.contracted, count: 1 }],
+        subStage: "Meet Pending",
         products: [
-          { id: "p-65", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$24K", larr: "$23K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
+          { id: "p-65", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$24K", larr: "$23K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.contracted, count: 1 }] },
         ],
       },
       {
@@ -1326,10 +1376,8 @@ const enterpriseData: EnterpriseRow[] = [
         larr: "$16K",
         grr: 68.2,
         nrr: null,
-        stages: [
-          { color: STAGE_COLORS.live, count: 1 },
-          { color: STAGE_COLORS.onboarding, count: 2 },
-        ],
+        stages: [{ color: STAGE_COLORS.onboarding, count: 1 }],
+        subStage: "OB To Be Scheduled",
         products: [
           { id: "p-66", name: "Vini AI", icon: "🌿", planCount: 3, carr: "$23K", larr: "$16K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }, { color: STAGE_COLORS.onboarding, count: 2 }], subProducts: [
             { id: "sp-66a", name: "Service IB", carr: "$8K", larr: "$6K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
@@ -1349,9 +1397,10 @@ const enterpriseData: EnterpriseRow[] = [
         larrDelta: "+$1K",
         grr: 100.0,
         nrr: 100.0,
-        stages: [{ color: STAGE_COLORS.live, count: 1 }],
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Sales Drop off",
         products: [
-          { id: "p-67", name: "Studio AI", icon: "🖼️", planCount: 1, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
+          { id: "p-67", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$21K", larr: "$20K", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.live, count: 1 }] },
         ],
       },
     ],
@@ -1392,6 +1441,18 @@ const STAGE_BADGE_STYLES: Record<string, string> = {
   "Drop Off": "bg-orange-100 text-orange-700 border border-orange-200",
 }
 
+function PlanBadge({ plan }: { plan?: "Pro" | "Lite" }) {
+  if (!plan) return null
+  const style = plan === "Pro"
+    ? "bg-purple-100 text-purple-700 border border-purple-200"
+    : "bg-sky-100 text-sky-700 border border-sky-200"
+  return (
+    <span className={`inline-flex items-center px-2 py-0.5 rounded-[6px] text-xs font-medium ${style}`}>
+      {plan}
+    </span>
+  )
+}
+
 function StageBadge({ segments }: { segments: StageSegment[] }) {
   if (!segments.length) return <span className="text-sm text-gray-300">—</span>
   const dominant = segments.reduce((a, b) => (b.count > a.count ? b : a), segments[0])
@@ -1400,6 +1461,36 @@ function StageBadge({ segments }: { segments: StageSegment[] }) {
   return (
     <span className={`inline-flex items-center px-2.5 py-0.5 rounded-[8px] text-xs font-medium ${style}`}>
       {name}
+    </span>
+  )
+}
+
+const SUB_STAGE_BADGE_STYLES: Record<string, string> = {
+  // Contracted sub-stages
+  "Meet Pending":       "bg-yellow-50 text-yellow-700 border border-yellow-200",
+  "Meet Scheduled":     "bg-blue-50 text-blue-700 border border-blue-200",
+  "Meet Done":          "bg-green-50 text-green-700 border border-green-200",
+  "Meet Cancelled":     "bg-red-50 text-red-600 border border-red-200",
+  "Meet Rescheduled":   "bg-orange-50 text-orange-700 border border-orange-200",
+  // Onboarding sub-stages
+  "OB To Be Scheduled": "bg-gray-50 text-gray-600 border border-gray-200",
+  "In Implementation":  "bg-indigo-50 text-indigo-700 border border-indigo-200",
+  "Under Review":       "bg-purple-50 text-purple-700 border border-purple-200",
+  "Client Unresponsive":"bg-red-50 text-red-600 border border-red-200",
+  "CSM Handover Pending":"bg-amber-50 text-amber-700 border border-amber-200",
+  "OB Live":            "bg-green-50 text-green-700 border border-green-200",
+  // Churned sub-stages
+  "Sales Drop off":     "bg-red-50 text-red-600 border border-red-200",
+  "OB Drop off":        "bg-orange-50 text-orange-700 border border-orange-200",
+  "Drop off":           "bg-red-50 text-red-700 border border-red-200",
+}
+
+function SubStageBadge({ subStage }: { subStage?: string }) {
+  if (!subStage) return <span className="text-sm text-gray-300">—</span>
+  const style = SUB_STAGE_BADGE_STYLES[subStage] ?? "bg-gray-50 text-gray-600 border border-gray-200"
+  return (
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-[8px] text-xs font-medium whitespace-nowrap ${style}`}>
+      {subStage}
     </span>
   )
 }
@@ -1414,18 +1505,6 @@ function RetentionPill({ value }: { value: number | null }) {
   )
 }
 
-function StagesBar({ segments, total }: { segments: StageSegment[]; total: number }) {
-  return (
-    <div className="flex items-center gap-2 justify-end">
-      <div className="flex items-center gap-0.5">
-        {segments.map((seg, i) => (
-          <div key={i} className="w-3 h-3 rounded-full" style={{ backgroundColor: seg.color }} title={`${seg.count}`} />
-        ))}
-      </div>
-      <span className="text-sm text-gray-500 font-light min-w-[24px] text-right">{total}</span>
-    </div>
-  )
-}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -1449,6 +1528,9 @@ function SubProductSubRow({ sub }: { sub: SubProductRow }) {
       </td>
       <td className="px-4 py-1.5 text-left border-r border-gray-200">
         <StageBadge segments={sub.stages} />
+      </td>
+      <td className="px-4 py-1.5 text-left border-r border-gray-200">
+        <SubStageBadge subStage={sub.subStage} />
       </td>
       <td className="px-4 py-1.5 text-right border-r border-gray-200">
         <div className="text-xs text-gray-600 font-light">{sub.carr}</div>
@@ -1486,10 +1568,14 @@ function ProductSubRow({ product }: { product: ProductRow }) {
             )}
             <span className="text-sm text-gray-700 font-light">{product.name}</span>
             <span className="text-xs text-gray-400 font-light">{product.planCount}p</span>
+            <PlanBadge plan={product.plan} />
           </div>
         </td>
         <td className="px-4 py-1.5 text-left border-r border-gray-200">
           <StageBadge segments={product.stages} />
+        </td>
+        <td className="px-4 py-1.5 text-left border-r border-gray-200">
+          <SubStageBadge subStage={product.subStage} />
         </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
           <div className="text-sm text-gray-800 font-light">{product.carr}</div>
@@ -1511,7 +1597,6 @@ function ProductSubRow({ product }: { product: ProductRow }) {
 
 function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
   const [expanded, setExpanded] = useState(false)
-  const total = rooftop.stages.reduce((s, seg) => s + seg.count, 0)
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(!expanded)}>
@@ -1549,6 +1634,9 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
         <td className="px-4 py-1.5 text-left border-r border-gray-200">
           <StageBadge segments={rooftop.stages} />
         </td>
+        <td className="px-4 py-1.5 text-left border-r border-gray-200">
+          <SubStageBadge subStage={rooftop.subStage} />
+        </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
           <div className="text-sm text-gray-800 font-light">{rooftop.carr}</div>
         </td>
@@ -1569,7 +1657,6 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
 
 function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
   const [expanded, setExpanded] = useState(false)
-  const total = enterprise.stages.reduce((s, seg) => s + seg.count, 0)
   return (
     <>
       <tr className="cursor-pointer hover:bg-gray-50 border-b border-gray-100" onClick={() => setExpanded(!expanded)}>
@@ -1598,6 +1685,9 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
         </td>
         <td className="px-4 py-2 text-left border-r border-gray-200">
           <StageBadge segments={enterprise.stages} />
+        </td>
+        <td className="px-4 py-2 text-left border-r border-gray-200">
+          <SubStageBadge subStage={enterprise.subStage} />
         </td>
         <td className="px-4 py-2 text-right border-r border-gray-200">
           <div className="text-sm font-medium text-gray-900">{enterprise.carr}</div>
@@ -1642,6 +1732,14 @@ function dominantStageColor(stages: StageSegment[]): string | null {
   return stages.reduce((a, b) => (b.count > a.count ? b : a)).color
 }
 
+const COLOR_STAGE_MAP: Record<string, string> = Object.fromEntries(
+  Object.entries(STAGE_COLOR_MAP).map(([k, v]) => [v, k])
+)
+
+function getStageNameFromColor(color: string | undefined): string {
+  return color ? (COLOR_STAGE_MAP[color] ?? "") : ""
+}
+
 function parseAmount(str: string): number {
   const s = (str ?? "").replace(/[$$,\s]/g, "")
   if (s.endsWith("M")) return parseFloat(s) * 1_000_000
@@ -1663,10 +1761,12 @@ const TAB_PRODUCT_MAP: Record<string, string> = {
 export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "studio_ai" | "vini_ai" }) {
   const [searchValue, setSearchValue] = useState("")
   const [planFilter, setPlanFilter] = useState("All")
+  const [studioPlanFilter, setStudioPlanFilter] = useState("All")
   const [typeFilter, setTypeFilter] = useState<string[]>([])
   const [subTypeFilter, setSubTypeFilter] = useState<string[]>([])
   const [productFilter, setProductFilter] = useState<string[]>([])
   const [stageFilter, setStageFilter] = useState<string[]>([])
+  const [subStageFilter, setSubStageFilter] = useState<string[]>([])
   const [rooftopTypeFilter, setRooftopTypeFilter] = useState<string[]>([])
   const [regionFilter, setRegionFilter] = useState<string[]>([])
   const [liveArrFilter, setLiveArrFilter] = useState<{ operator: string; amount: number | number[] }[]>([])
@@ -1693,23 +1793,33 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
         if (rooftopTypeFilter.length > 0) {
           rooftops = rooftops.filter(r => rooftopTypeFilter.includes(r.type.toLowerCase()))
         }
-        if (stageFilter.length > 0) {
-          const targetColors = new Set(stageFilter.map(s => STAGE_COLOR_MAP[s]).filter(Boolean))
+        if (stageFilter.length > 0 || subStageFilter.length > 0) {
           rooftops = rooftops.filter(r => {
             const dc = dominantStageColor(r.stages)
-            return dc ? targetColors.has(dc) : false
+            const stageName = getStageNameFromColor(dc ?? undefined)
+            // Sub stages selected for this parent — match by subStage value
+            const subStagesForParent = SUB_STAGE_MAP[stageName] ?? []
+            const hasSubStageSelectionForParent = subStagesForParent.some(ss => subStageFilter.includes(ss))
+            if (stageFilter.includes(stageName) && !hasSubStageSelectionForParent) return true
+            if (subStageFilter.includes(r.subStage ?? "")) return true
+            return false
           })
         }
         if (atRiskActive) {
           rooftops = rooftops.filter(r => r.grr !== null && r.grr < 100)
         }
+        if (studioPlanFilter !== "All") {
+          rooftops = rooftops.filter(r =>
+            r.products.some((p: ProductRow) => p.name === "Studio AI" && p.plan === studioPlanFilter)
+          )
+        }
         return { ...ent, rooftops }
       })
       .filter(ent => {
-        const hasRooftopFilter = rooftopTypeFilter.length > 0 || stageFilter.length > 0 || atRiskActive
+        const hasRooftopFilter = rooftopTypeFilter.length > 0 || stageFilter.length > 0 || subStageFilter.length > 0 || atRiskActive || studioPlanFilter !== "All"
         return !hasRooftopFilter || ent.rooftops.length > 0
       })
-  }, [typeFilter, dealerSegmentFilter, rooftopTypeFilter, stageFilter, atRiskActive])
+  }, [typeFilter, dealerSegmentFilter, rooftopTypeFilter, stageFilter, subStageFilter, atRiskActive, studioPlanFilter])
 
   // visibleData additionally applies the tab product filter for table rendering
   const visibleData = useMemo(() => {
@@ -1766,7 +1876,9 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
     const avgNrr = nrrRooftops.length
       ? nrrRooftops.reduce((s, r) => s + r.nrr!, 0) / nrrRooftops.length
       : null
-    return { totalCarr, totalLarr, carrDelta, larrDelta, avgGrr, avgNrr }
+    const enterpriseCount = baseData.length
+    const rooftopCount = baseData.reduce((s, e) => s + e.rooftops.length, 0)
+    return { totalCarr, totalLarr, carrDelta, larrDelta, avgGrr, avgNrr, enterpriseCount, rooftopCount }
   }, [baseData, visibleData, activeTab])
 
   const periodLabel = useMemo(() => {
@@ -1795,6 +1907,7 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
             onProductChange={setProductFilter}
             onRooftopTypeChange={setRooftopTypeFilter}
             onStageChange={setStageFilter}
+            onSubStageChange={setSubStageFilter}
             onLiveArrChange={setLiveArrFilter}
             onContractedArrChange={setContractedArrFilter}
             onHealthScoreChange={setHealthScoreFilter}
@@ -1805,6 +1918,8 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
             onMediaChange={setMediaFilter}
             onAgentChange={setAgentFilter}
             onDealerSegmentChange={setDealerSegmentFilter}
+            onStudioPlanChange={setStudioPlanFilter}
+            studioPlanValue={studioPlanFilter}
             activeTab={activeTab}
             mediaValues={mediaFilter}
             agentValues={agentFilter}
@@ -1816,6 +1931,7 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
             subTypeValues={subTypeFilter}
             productValues={productFilter}
             stageValues={stageFilter}
+            subStageValues={subStageFilter}
             liveArrFilters={liveArrFilter}
             contractedArrFilters={contractedArrFilter}
             healthScoreRanges={healthScoreFilter}
@@ -1825,6 +1941,10 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
         </div>
 
         <div className="border-b border-gray-200 px-3 py-3 flex items-center gap-3">
+          <CountsCard
+            enterpriseCount={widgetStats.enterpriseCount}
+            rooftopCount={widgetStats.rooftopCount}
+          />
           <SnapshotCard
             date="As of March 19, 2026"
             carr={{ value: formatAmount(widgetStats.totalCarr), delta: `+${formatAmount(widgetStats.carrDelta)}` }}
