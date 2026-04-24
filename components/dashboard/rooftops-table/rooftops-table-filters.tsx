@@ -981,14 +981,14 @@ export function RooftopsTableFilters({
             
             {/* More Filters Dropdown Modal */}
             {showMoreFilters && (
-              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-[500px] lg:w-[600px] bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] max-h-[600px] overflow-hidden flex flex-col">
+              <div className="absolute right-0 top-full mt-2 w-[calc(100vw-2rem)] sm:w-[500px] lg:w-[600px] bg-white border border-gray-200 rounded-xl shadow-2xl z-[9999] max-h-[600px] overflow-visible flex flex-col">
                 {/* Header */}
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900">Filters</h2>
                 </div>
 
                 {/* Filters Content */}
-                <div className="flex-1 overflow-y-auto px-4 sm:px-6 py-4 sm:py-6">
+                <div className="flex-1 px-4 sm:px-6 py-4 sm:py-6">
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 sm:gap-x-6 gap-y-4 sm:gap-y-6">
 
                     {/* Dealer Type Filter */}
@@ -1090,7 +1090,7 @@ export function RooftopsTableFilters({
                     </div>
 
                     {/* Studio Plan Filter */}
-                    <div>
+                    {activeTab !== "vini_ai" && <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">Studio Plan</label>
                       <div ref={studioPlanDropdownRef} className="relative">
                         <button
@@ -1134,7 +1134,7 @@ export function RooftopsTableFilters({
                           </div>
                         )}
                       </div>
-                    </div>
+                    </div>}
 
                   </div>
                 </div>
