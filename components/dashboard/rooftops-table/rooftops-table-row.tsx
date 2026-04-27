@@ -329,9 +329,6 @@ export const RooftopsTableRow = forwardRef<HTMLTableRowElement, RooftopsTableRow
       <td className="px-3 py-2 h-9 w-[282px] max-w-[282px] min-w-[282px] sticky left-0 bg-white z-10 shadow-[inset_-1px_0_0_0_#f3f4f6]" style={{width: '282px !important', minWidth: '282px !important', maxWidth: '282px !important'}}>
         <div className="flex items-center justify-between gap-1.5">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-black flex items-center justify-center">
-              <span className="text-white text-xs font-semibold">{(data.name?.trim()?.charAt(0)?.toUpperCase()) || (data.enterpriseName?.trim()?.charAt(0)?.toUpperCase()) || '-'}</span>
-            </div>
             <button
               onClick={() => {
                 const env = getEnvironmentFromLocation();

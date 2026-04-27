@@ -1682,12 +1682,11 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
             <button className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600">
               <ChevronIcon open={expanded} />
             </button>
-            <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm text-gray-800 font-normal">{rooftop.name}</span>
-                <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded font-light">{rooftop.tCode}</span>
+            <div className="min-w-0">
+              <div className="flex items-center gap-2 min-w-0">
+                <span className="text-sm text-gray-800 font-normal truncate">{rooftop.name}</span>
                 {rooftop.type && (
-                  <span className={`inline-flex px-3 py-0.5 text-xs font-semibold border items-center rounded-[8px] ${
+                  <span className={`flex-shrink-0 inline-flex px-3 py-0.5 text-xs font-semibold border items-center rounded-[8px] ${
                     rooftop.type === "Independent"
                       ? "bg-[#EEFCD5] text-[#3B6E23] border-[#BFEDA0]"
                       : "bg-[#FEF8E1] text-[#7C4F1A] border-[#F0D98A]"
@@ -1697,7 +1696,7 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
                 )}
               </div>
               {rooftop.products.length > 0 && (
-                <div className="flex items-center gap-2 mt-1">
+                <div className="flex items-center gap-2 mt-0.5">
                   {rooftop.products.map((p) => (
                     <span key={p.id} className="text-xs text-gray-500 font-light">
                       {p.name} ×{p.planCount}
@@ -1753,13 +1752,15 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
                     {enterprise.tags}
                   </span>
                 )}
+              </div>
+              <div className="flex items-center gap-1.5 mt-0.5">
                 {enterprise.dealerSegment && (
-                  <span className={`text-xs px-2.5 py-0.5 rounded-[8px] font-medium ${DEALER_SEGMENT_BADGE_STYLES[enterprise.dealerSegment] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}>
+                  <span className="text-xs font-light text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-[8px]">
                     {enterprise.dealerSegment}
                   </span>
                 )}
+                <span className="text-xs text-gray-400 font-light">{enterprise.rooftopCount} rooftops</span>
               </div>
-              <div className="text-xs text-gray-400 font-light mt-0.5">{enterprise.rooftopCount} rooftops</div>
             </div>
           </div>
         </td>
