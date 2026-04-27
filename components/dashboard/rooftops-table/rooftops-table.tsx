@@ -1597,7 +1597,7 @@ function ChevronIcon({ open }: { open: boolean }) {
 function SubProductSubRow({ sub }: { sub: SubProductRow }) {
   return (
     <tr className="border-b border-gray-50 hover:bg-gray-50/60 bg-gray-50/30">
-      <td className="px-4 py-1.5 pl-36 border-r border-gray-200">
+      <td className="px-4 py-1.5 pl-36 sticky left-0 z-10 bg-white shadow-[inset_-1px_0_0_0_#e5e7eb]">
         <div className="flex items-center gap-2">
           <div className="w-1 h-1 rounded-full bg-gray-300 flex-shrink-0" />
           <span className="text-xs text-gray-500 font-light">{sub.name}</span>
@@ -1634,7 +1634,7 @@ function ProductSubRow({ product }: { product: ProductRow }) {
         className={`border-b border-gray-100 hover:bg-gray-50 ${hasSubProducts ? "cursor-pointer" : ""}`}
         onClick={hasSubProducts ? () => setExpanded(!expanded) : undefined}
       >
-        <td className="px-4 py-1.5 pl-24 border-r border-gray-200">
+        <td className="px-4 py-1.5 pl-24 sticky left-0 z-10 bg-white shadow-[inset_-1px_0_0_0_#e5e7eb]">
           <div className="flex items-center gap-2">
             {hasSubProducts ? (
               <button className="w-4 h-4 flex items-center justify-center text-gray-400 hover:text-gray-600 flex-shrink-0">
@@ -1677,7 +1677,7 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
   return (
     <>
       <tr className="border-b border-gray-100 hover:bg-gray-50 cursor-pointer" onClick={() => setExpanded(!expanded)}>
-        <td className="px-4 py-1.5 pl-14 border-r border-gray-200">
+        <td className="px-4 py-1.5 pl-14 sticky left-0 z-10 bg-white shadow-[inset_-1px_0_0_0_#e5e7eb]">
           <div className="flex items-center gap-2">
             <button className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600">
               <ChevronIcon open={expanded} />
@@ -1740,7 +1740,7 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
   return (
     <>
       <tr className="cursor-pointer hover:bg-gray-50 border-b border-gray-100" onClick={() => setExpanded(!expanded)}>
-        <td className="px-4 py-2 border-r border-gray-200">
+        <td className="px-4 py-2 sticky left-0 z-10 bg-white shadow-[inset_-1px_0_0_0_#e5e7eb]">
           <div className="flex items-center gap-3">
             <button className="w-5 h-5 flex items-center justify-center text-gray-400 hover:text-gray-600 flex-shrink-0">
               <ChevronIcon open={expanded} />

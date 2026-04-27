@@ -7,7 +7,7 @@ export function RooftopsTableHeader({ snapshotDate = "As of Mar 19, 2026", perio
   return (
     <thead>
       <tr className="border-b border-gray-200">
-        <th className="min-w-[400px] px-4 py-2 border-r border-gray-200" />
+        <th className="min-w-[400px] px-4 py-2 sticky left-0 z-20 bg-white shadow-[inset_-1px_0_0_0_#e5e7eb]" />
 
         <th className="px-4 py-2 border-r border-gray-200" />
 
@@ -29,7 +29,7 @@ export function RooftopsTableHeader({ snapshotDate = "As of Mar 19, 2026", perio
       </tr>
 
       <tr className="bg-gray-50 border-b border-gray-200 h-9">
-        <th className="px-4 py-2 text-left border-r border-gray-200">
+        <th className="px-4 py-2 text-left sticky left-0 z-20 bg-gray-50 shadow-[inset_-1px_0_0_0_#e5e7eb]">
           <span className="text-xs font-semibold text-gray-700">Enterprises</span>
         </th>
 
