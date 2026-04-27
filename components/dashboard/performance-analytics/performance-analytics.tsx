@@ -807,30 +807,41 @@ export const SnapshotCard = ({
   date = "As of March 19, 2026",
   carr = { value: "₹10.9M", delta: "+₹787K" },
   larr = { value: "₹7.2M", delta: "+₹501K" },
+  churned,
 }: {
   date?: string
   carr?: { value: string; delta: string }
   larr?: { value: string; delta: string }
+  churned?: { value: string }
 }) => (
   <div className="inline-flex bg-white border border-gray-200 rounded-2xl overflow-hidden flex-col">
     <div className="bg-gray-100 px-4 py-1 w-full">
       <span className="text-[11px] text-gray-500 font-normal">{date}</span>
     </div>
     <div className="flex items-center gap-0 px-4 py-3">
-      {/* CARR */}
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[15px] font-semibold text-gray-500">CARR:</span>
-        <span className="text-[22px] font-bold leading-tight text-[#2563eb]">{carr.value}</span>
-        <span className="text-[11px] font-semibold text-[#027a48]">{carr.delta}</span>
-      </div>
-      {/* Divider */}
-      <div className="w-px self-stretch bg-gray-200 mx-4" />
-      {/* LARR */}
-      <div className="flex items-baseline gap-1.5">
-        <span className="text-[15px] font-semibold text-gray-500">LARR:</span>
-        <span className="text-[22px] font-bold leading-tight text-[#027a48]">{larr.value}</span>
-        <span className="text-[11px] font-semibold text-[#027a48]">{larr.delta}</span>
-      </div>
+      {churned ? (
+        <div className="flex items-baseline gap-1.5">
+          <span className="text-[15px] font-semibold text-red-400">Churned ARR:</span>
+          <span className="text-[22px] font-bold leading-tight text-red-500">{churned.value}</span>
+        </div>
+      ) : (
+        <>
+          {/* CARR */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[15px] font-semibold text-gray-500">CARR:</span>
+            <span className="text-[22px] font-bold leading-tight text-[#2563eb]">{carr.value}</span>
+            <span className="text-[11px] font-semibold text-[#027a48]">{carr.delta}</span>
+          </div>
+          {/* Divider */}
+          <div className="w-px self-stretch bg-gray-200 mx-4" />
+          {/* LARR */}
+          <div className="flex items-baseline gap-1.5">
+            <span className="text-[15px] font-semibold text-gray-500">LARR:</span>
+            <span className="text-[22px] font-bold leading-tight text-[#027a48]">{larr.value}</span>
+            <span className="text-[11px] font-semibold text-[#027a48]">{larr.delta}</span>
+          </div>
+        </>
+      )}
     </div>
   </div>
 )

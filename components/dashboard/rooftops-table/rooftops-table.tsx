@@ -1405,6 +1405,78 @@ const enterpriseData: EnterpriseRow[] = [
       },
     ],
   },
+  {
+    id: "ent-11",
+    eCode: "E011",
+    name: "Summit Autos",
+    initials: "S",
+    color: "#6b7280",
+    tags: "Group Dealer",
+    dealerSegment: "Mid Market",
+    rooftopCount: 3,
+    carr: "$0.18M",
+    carrDelta: "",
+    larr: "$0",
+    larrDelta: "",
+    grr: 0,
+    nrr: 0,
+    stages: [{ color: STAGE_COLORS.churned, count: 3 }],
+    rooftops: [
+      {
+        id: "rt-churn-1",
+        tCode: "T0101",
+        name: "Summit Autos · Chandigarh Sector 17",
+        type: "Franchise",
+        carr: "$72K",
+        larr: "$0",
+        grr: 0,
+        nrr: null,
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Drop off",
+        products: [
+          { id: "p-c1", name: "Studio AI", icon: "🖼️", plan: "Pro", planCount: 1, carr: "$72K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+            { id: "sp-c1a", name: "Image", carr: "$40K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
+            { id: "sp-c1b", name: "Video Tour", carr: "$32K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
+          ]},
+        ],
+      },
+      {
+        id: "rt-churn-2",
+        tCode: "T0102",
+        name: "Summit Autos · Ludhiana Model Town",
+        type: "Independent",
+        carr: "$58K",
+        larr: "$0",
+        grr: 0,
+        nrr: null,
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "OB Drop off",
+        products: [
+          { id: "p-c2", name: "Vini AI", icon: "🌿", planCount: 2, carr: "$58K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 2 }], subProducts: [
+            { id: "sp-c2a", name: "Service IB", carr: "$30K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
+            { id: "sp-c2b", name: "Sales OB", carr: "$28K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
+          ]},
+        ],
+      },
+      {
+        id: "rt-churn-3",
+        tCode: "T0103",
+        name: "Summit Autos · Amritsar Mall Road",
+        type: "Franchise",
+        carr: "$50K",
+        larr: "$0",
+        grr: 0,
+        nrr: null,
+        stages: [{ color: STAGE_COLORS.churned, count: 1 }],
+        subStage: "Sales Drop off",
+        products: [
+          { id: "p-c3", name: "Studio AI", icon: "🖼️", plan: "Lite", planCount: 1, carr: "$50K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }], subProducts: [
+            { id: "sp-c3a", name: "Image", carr: "$50K", larr: "$0", grr: null, nrr: null, stages: [{ color: STAGE_COLORS.churned, count: 1 }] },
+          ]},
+        ],
+      },
+    ],
+  },
 ]
 
 const COLOR_TO_STAGE: Record<string, string> = {
@@ -1505,6 +1577,11 @@ function RetentionPill({ value }: { value: number | null }) {
   )
 }
 
+function isChurned(stages: StageSegment[]): boolean {
+  if (!stages.length) return false
+  const dominant = stages.reduce((a, b) => (b.count > a.count ? b : a), stages[0])
+  return dominant.color === STAGE_COLORS.churned
+}
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -1533,7 +1610,7 @@ function SubProductSubRow({ sub }: { sub: SubProductRow }) {
         <SubStageBadge subStage={sub.subStage} />
       </td>
       <td className="px-4 py-1.5 text-right border-r border-gray-200">
-        <div className="text-xs text-gray-600 font-light">{sub.carr}</div>
+        <div className={`text-xs font-light ${isChurned(sub.stages) ? "line-through text-gray-400" : "text-gray-600"}`}>{sub.carr}</div>
       </td>
       <td className="px-4 py-1.5 text-right border-r border-gray-200">
         <div className="text-xs text-gray-600 font-light">{sub.larr || "—"}</div>
@@ -1578,7 +1655,7 @@ function ProductSubRow({ product }: { product: ProductRow }) {
           <SubStageBadge subStage={product.subStage} />
         </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
-          <div className="text-sm text-gray-800 font-light">{product.carr}</div>
+          <div className={`text-sm font-light ${isChurned(product.stages) ? "line-through text-gray-400" : "text-gray-800"}`}>{product.carr}</div>
         </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
           <div className="text-sm text-gray-800 font-light">{product.larr || "—"}</div>
@@ -1638,7 +1715,7 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
           <SubStageBadge subStage={rooftop.subStage} />
         </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
-          <div className="text-sm text-gray-800 font-light">{rooftop.carr}</div>
+          <div className={`text-sm font-light ${isChurned(rooftop.stages) ? "line-through text-gray-400" : "text-gray-800"}`}>{rooftop.carr}</div>
         </td>
         <td className="px-4 py-1.5 text-right border-r border-gray-200">
           <div className="text-sm text-gray-800 font-light">{rooftop.larr}</div>
@@ -1657,6 +1734,8 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
 
 function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
   const [expanded, setExpanded] = useState(false)
+  const filteredCarr = formatAmount(enterprise.rooftops.reduce((s, r) => s + parseAmount(r.carr), 0))
+  const filteredCarrChurned = enterprise.rooftops.length > 0 && enterprise.rooftops.every(r => isChurned(r.stages))
   return (
     <>
       <tr className="cursor-pointer hover:bg-gray-50 border-b border-gray-100" onClick={() => setExpanded(!expanded)}>
@@ -1690,7 +1769,7 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
           <SubStageBadge subStage={enterprise.subStage} />
         </td>
         <td className="px-4 py-2 text-right border-r border-gray-200">
-          <div className="text-sm font-medium text-gray-900">{enterprise.carr}</div>
+          <div className={`text-sm font-medium ${(isChurned(enterprise.stages) || filteredCarrChurned) ? "line-through text-gray-400" : "text-gray-900"}`}>{filteredCarr}</div>
         </td>
         <td className="px-4 py-2 text-right border-r border-gray-200">
           <div className="text-sm font-medium text-gray-900">{enterprise.larr}</div>
@@ -1949,6 +2028,7 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
             date="As of March 19, 2026"
             carr={{ value: formatAmount(widgetStats.totalCarr), delta: `+${formatAmount(widgetStats.carrDelta)}` }}
             larr={{ value: formatAmount(widgetStats.totalLarr), delta: `+${formatAmount(widgetStats.larrDelta)}` }}
+            churned={stageFilter.length === 1 && stageFilter[0] === "Churned" ? { value: formatAmount(widgetStats.totalCarr) } : undefined}
           />
           <PeriodCard
             period={periodLabel}

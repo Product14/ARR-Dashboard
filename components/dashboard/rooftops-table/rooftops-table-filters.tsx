@@ -947,18 +947,6 @@ export function RooftopsTableFilters({
             </div>
           )}
 
-          {/* At Risk Quick Filter */}
-          <button
-            onClick={() => onAtRiskChange?.(!atRiskActive)}
-            className={`h-8 px-3 border rounded-lg text-sm flex items-center gap-1.5 flex-shrink-0 font-medium transition-colors ${
-              atRiskActive
-                ? 'border-red-400 bg-red-50 text-red-600'
-                : 'border-gray-300 bg-white hover:bg-gray-50 text-gray-700'
-            }`}
-          >
-            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${atRiskActive ? 'bg-red-500' : 'bg-red-400'}`} />
-            At Risk
-          </button>
 
           {/* More Filters Button */}
           <div className="relative flex-shrink-0" ref={moreFiltersRef}>
