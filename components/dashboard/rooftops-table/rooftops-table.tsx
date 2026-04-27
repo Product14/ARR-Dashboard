@@ -2031,11 +2031,13 @@ export function RooftopsTable({ activeTab = "all" }: { activeTab?: "all" | "stud
             larr={{ value: formatAmount(widgetStats.totalLarr), delta: `+${formatAmount(widgetStats.larrDelta)}` }}
             churned={stageFilter.length === 1 && stageFilter[0] === "Churned" ? { value: formatAmount(widgetStats.totalCarr) } : undefined}
           />
-          <PeriodCard
-            period={periodLabel}
-            grr={widgetStats.avgGrr !== null ? { value: `${widgetStats.avgGrr.toFixed(1)} %`, color: widgetStats.avgGrr >= 100 ? "#027a48" : "#d27b74" } : undefined}
-            nrr={widgetStats.avgNrr !== null ? { value: `${widgetStats.avgNrr.toFixed(1)} %`, color: widgetStats.avgNrr >= 100 ? "#027a48" : "#d27b74" } : undefined}
-          />
+          {!(stageFilter.length === 1 && stageFilter[0] === "Churned") && (
+            <PeriodCard
+              period={periodLabel}
+              grr={widgetStats.avgGrr !== null ? { value: `${widgetStats.avgGrr.toFixed(1)} %`, color: widgetStats.avgGrr >= 100 ? "#027a48" : "#d27b74" } : undefined}
+              nrr={widgetStats.avgNrr !== null ? { value: `${widgetStats.avgNrr.toFixed(1)} %`, color: widgetStats.avgNrr >= 100 ? "#027a48" : "#d27b74" } : undefined}
+            />
+          )}
         </div>
 
         <div className="overflow-x-auto overflow-y-visible">
