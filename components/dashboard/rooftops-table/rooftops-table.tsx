@@ -1735,6 +1735,7 @@ function RooftopSubRow({ rooftop }: { rooftop: RooftopRow }) {
 function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
   const [expanded, setExpanded] = useState(false)
   const filteredCarr = formatAmount(enterprise.rooftops.reduce((s, r) => s + parseAmount(r.carr), 0))
+  const filteredLarr = formatAmount(enterprise.rooftops.reduce((s, r) => s + parseAmount(r.larr), 0))
   const filteredCarrChurned = enterprise.rooftops.length > 0 && enterprise.rooftops.every(r => isChurned(r.stages))
   return (
     <>
@@ -1772,7 +1773,7 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
           <div className={`text-sm font-medium ${(isChurned(enterprise.stages) || filteredCarrChurned) ? "line-through text-gray-400" : "text-gray-900"}`}>{filteredCarr}</div>
         </td>
         <td className="px-4 py-2 text-right border-r border-gray-200">
-          <div className="text-sm font-medium text-gray-900">{enterprise.larr}</div>
+          <div className={`text-sm font-medium ${(isChurned(enterprise.stages) || filteredCarrChurned) ? "line-through text-gray-400" : "text-gray-900"}`}>{filteredLarr}</div>
         </td>
         <td className="px-4 py-2 text-right border-r border-gray-200">
           <RetentionPill value={enterprise.grr} />
