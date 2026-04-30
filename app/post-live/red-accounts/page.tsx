@@ -1,0 +1,7 @@
+export default function RedAccountsPage() {
+  return (
+    <div className="p-6">
+      <h1 className="text-xl font-semibold text-gray-900">Red Accounts</h1>
+    </div>
+  )
+}
