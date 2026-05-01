@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react"
 import { SnapshotCard, PeriodCard, CountsCard } from "@/components/dashboard/performance-analytics/performance-analytics"
-import { RooftopsTableFilters } from "./contracted-table-filters"
-import { RooftopsTableHeader } from "./contracted-table-header"
+import { RooftopsTableFilters } from "./live-accounts-table-filters"
+import { RooftopsTableHeader } from "./live-accounts-table-header"
 
 const STAGE_COLORS = {
   live: "#22c55e",
@@ -1829,7 +1829,7 @@ const TAB_PRODUCT_MAP: Record<string, string> = {
   vini_ai: "Vini AI",
 }
 
-export function ContractedTable({ activeTab = "all" }: { activeTab?: "all" | "studio_ai" | "vini_ai" }) {
+export function LiveAccountsTable({ activeTab = "all" }: { activeTab?: "all" | "studio_ai" | "vini_ai" }) {
   const [overviewPeriod, setOverviewPeriod] = useState<'mtd' | 'qtd' | 'custom'>('mtd')
   const [searchValue, setSearchValue] = useState("")
   const [planFilter, setPlanFilter] = useState("All")
@@ -1992,11 +1992,11 @@ export function ContractedTable({ activeTab = "all" }: { activeTab?: "all" | "st
             </div>
           </div>
 
-          <div className="grid grid-cols-5 gap-3">
-            {/* Newly Contracted */}
-            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5">
+          <div className="flex gap-3">
+            {/* New Live */}
+            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5 w-[258px] shrink-0">
               <div className="bg-white rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-xs text-gray-500">Newly Contracted</span>
+                <span className="text-xs text-gray-500">New Live</span>
                 <span className="text-2xl font-bold text-green-600">$412.1k</span>
                 <span className="text-xs text-green-600">+8.2% vs last month</span>
               </div>
@@ -2006,62 +2006,16 @@ export function ContractedTable({ activeTab = "all" }: { activeTab?: "all" | "st
               </div>
             </div>
 
-            {/* Moved to OB */}
-            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5">
+            {/* Live Churned */}
+            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5 w-[258px] shrink-0">
               <div className="bg-white rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-xs text-gray-500">Moved to OB</span>
-                <span className="text-2xl font-bold text-gray-900">$212.3k</span>
-                <span className="text-xs text-green-600">+8.2% vs last month</span>
-              </div>
-              <div className="flex flex-col gap-1 text-xs text-gray-600 px-2 py-1">
-                <span><span className="font-semibold text-gray-800">12</span> Rooftops</span>
-                <span><span className="font-semibold text-gray-800">7</span> Accounts</span>
-              </div>
-            </div>
-
-            {/* Avg. Days to Handover */}
-            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5">
-              <div className="bg-white rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-xs text-gray-500">Avg. Days to Handover</span>
-                <span className="text-2xl font-bold text-gray-900">4.1</span>
-                <span className="text-xs text-red-500">-0.1 vs last month</span>
-              </div>
-              <div className="flex flex-col gap-1 text-xs text-gray-600 px-2 py-1">
-                <span><span className="font-semibold text-gray-800">&lt;3</span> Target</span>
-                <span><span className="font-semibold text-red-500">11</span> Rooftops Breached</span>
-              </div>
-            </div>
-
-            {/* Avg. Contract Value */}
-            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5">
-              <div className="bg-white rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-xs text-gray-500">Avg. Contract Value</span>
-                <div className="flex items-baseline gap-1">
-                  <span className="text-2xl font-bold text-gray-900">$11.3k</span>
-                  <span className="text-xs text-gray-400">/Rooftop</span>
-                </div>
-                <span className="text-xs text-red-500">-12% vs last month</span>
-              </div>
-              <div className="flex flex-col gap-1 text-xs text-gray-600 px-2 py-1">
-                <div className="flex items-baseline gap-1">
-                  <span className="font-semibold text-gray-800">$21.1k</span>
-                  <span className="text-gray-500">/Account</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Sales Drop Off */}
-            <div className="rounded-xl bg-gray-100 p-1.5 flex flex-col gap-1.5">
-              <div className="bg-white rounded-lg p-3 flex flex-col gap-1">
-                <span className="text-xs text-gray-500">Sales Drop Off</span>
-                <div className="flex items-baseline gap-1.5">
-                  <span className="text-2xl font-bold text-red-500">7</span>
-                  <span className="text-sm text-gray-700">Rooftops</span>
-                </div>
+                <span className="text-xs text-gray-500">Live Churned</span>
+                <span className="text-2xl font-bold text-red-500">$17.2k</span>
                 <span className="text-xs text-green-600">-3 vs last month</span>
               </div>
               <div className="flex flex-col gap-1 text-xs text-gray-600 px-2 py-1">
-                <span><span className="font-semibold text-red-500">4</span> Accounts</span>
+                <span><span className="font-semibold text-red-500">4</span> Rooftops</span>
+                <span><span className="font-semibold text-red-500">3</span> Accounts</span>
               </div>
             </div>
           </div>

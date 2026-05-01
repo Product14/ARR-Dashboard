@@ -1745,22 +1745,7 @@ function EnterpriseTableRow({ enterprise }: { enterprise: EnterpriseRow }) {
               <ChevronIcon open={expanded} />
             </button>
             <div>
-              <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-sm font-medium text-gray-900">{enterprise.name}</span>
-                {enterprise.tags && (
-                  <span className={`text-xs px-2.5 py-0.5 rounded-[8px] font-medium ${DEALER_TYPE_BADGE_STYLES[enterprise.tags] ?? "bg-gray-100 text-gray-600 border border-gray-200"}`}>
-                    {enterprise.tags}
-                  </span>
-                )}
-              </div>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                {enterprise.dealerSegment && (
-                  <span className="text-xs font-light text-gray-500 bg-gray-100 border border-gray-200 px-2 py-0.5 rounded-[8px]">
-                    {enterprise.dealerSegment}
-                  </span>
-                )}
-                <span className="text-xs text-gray-400 font-light">{enterprise.rooftopCount} rooftops</span>
-              </div>
+              <span className="text-sm font-medium text-gray-900">{enterprise.name}</span>
             </div>
           </div>
         </td>
@@ -1842,6 +1827,8 @@ const TAB_PRODUCT_MAP: Record<string, string> = {
 export function OnboardingTable({ activeTab = "all" }: { activeTab?: "all" | "studio_ai" | "vini_ai" }) {
   const [overviewPeriod, setOverviewPeriod] = useState<'mtd' | 'qtd' | 'custom'>('mtd')
   const [overviewTab, setOverviewTab] = useState<'Overview' | 'Stages'>('Overview')
+  const [overviewAgentFilter, setOverviewAgentFilter] = useState<string>('All Agents')
+  const [overviewAgentDropdownOpen, setOverviewAgentDropdownOpen] = useState(false)
   const [searchValue, setSearchValue] = useState("")
   const [planFilter, setPlanFilter] = useState("All")
   const [studioPlanFilter, setStudioPlanFilter] = useState("All")
@@ -2001,20 +1988,52 @@ export function OnboardingTable({ activeTab = "all" }: { activeTab?: "all" | "st
                 </button>
               ))}
             </div>
-            <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-8">
-              {(['mtd', 'qtd', 'custom'] as const).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setOverviewPeriod(p)}
-                  className={`px-2 sm:px-3 h-7 flex items-center text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
-                    overviewPeriod === p
-                      ? 'bg-white text-gray-900 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
-                  }`}
-                >
-                  {p === 'custom' ? 'Custom' : p.toUpperCase()}
-                </button>
-              ))}
+            <div className="flex items-center gap-2">
+              {activeTab === 'vini_ai' && (
+                <div className="relative">
+                  <button
+                    onClick={() => setOverviewAgentDropdownOpen(o => !o)}
+                    className="flex items-center gap-1.5 px-3 h-8 text-sm font-medium bg-white border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors whitespace-nowrap"
+                  >
+                    {overviewAgentFilter}
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {overviewAgentDropdownOpen && (
+                    <div className="absolute right-0 mt-1 w-40 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1">
+                      {['All Agents', 'Service IB', 'Service OB', 'Sales IB', 'Sales OB'].map((option) => (
+                        <button
+                          key={option}
+                          onClick={() => { setOverviewAgentFilter(option); setOverviewAgentDropdownOpen(false) }}
+                          className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                            overviewAgentFilter === option
+                              ? 'bg-blue-50 text-blue-700 font-medium'
+                              : 'text-gray-700 hover:bg-gray-50'
+                          }`}
+                        >
+                          {option}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+              <div className="flex items-center bg-gray-100 rounded-lg p-0.5 h-8">
+                {(['mtd', 'qtd', 'custom'] as const).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setOverviewPeriod(p)}
+                    className={`px-2 sm:px-3 h-7 flex items-center text-xs sm:text-sm font-medium rounded-md transition-colors duration-200 whitespace-nowrap ${
+                      overviewPeriod === p
+                        ? 'bg-white text-gray-900 shadow-sm'
+                        : 'text-gray-600 hover:text-gray-900'
+                    }`}
+                  >
+                    {p === 'custom' ? 'Custom' : p.toUpperCase()}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
@@ -2074,45 +2093,57 @@ export function OnboardingTable({ activeTab = "all" }: { activeTab?: "all" | "st
             </div>
           )}
 
-          {overviewTab === 'Stages' && (
-            <div className="rounded-xl overflow-hidden flex items-stretch">
-              {[
-                { num: 1, name: 'Pre Onboarding',     rooftops: 24, arr: '$23.1k' },
-                { num: 2, name: 'Profile setup',      rooftops: 34, arr: '$130k'  },
-                { num: 3, name: 'Integrations',       rooftops: 13, arr: '$23.1k' },
-                { num: 4, name: 'Studio & App Setup', rooftops: 37, arr: '$20.2k' },
-                { num: 5, name: 'Sync & Publish',     rooftops: 56, arr: '$23.1k' },
-              ].map((stage, i, stages) => {
-                const isFirst = i === 0
-                const isLast = i === stages.length - 1
-                const a = 18
-                const clipPath = isFirst
-                  ? `polygon(0% 0%, calc(100% - ${a}px) 0%, 100% 50%, calc(100% - ${a}px) 100%, 0% 100%)`
-                  : isLast
-                  ? `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, ${a}px 50%)`
-                  : `polygon(0% 0%, calc(100% - ${a}px) 0%, 100% 50%, calc(100% - ${a}px) 100%, 0% 100%, ${a}px 50%)`
-                return (
-                  <div
-                    key={stage.num}
-                    className="flex-1 bg-gray-100 flex flex-col gap-2 py-4"
-                    style={{
-                      clipPath,
-                      marginLeft: i > 0 ? '-8px' : 0,
-                      zIndex: stages.length - i,
-                      paddingLeft: isFirst ? '16px' : '36px',
-                      paddingRight: isLast ? '16px' : '36px',
-                    }}
-                  >
-                    <span className="text-xs font-medium text-purple-600">{stage.num}. {stage.name}</span>
-                    <div className="text-sm text-gray-700">
-                      <span className="text-2xl font-bold text-gray-900">{stage.rooftops}</span> Rooftops
+          {overviewTab === 'Stages' && (() => {
+            const studioStages = [
+              { num: 1, name: 'Pre Onboarding',     count: 24, arr: '$23.1k', unit: 'Rooftops' },
+              { num: 2, name: 'Profile setup',      count: 34, arr: '$130k',  unit: 'Rooftops' },
+              { num: 3, name: 'Integrations',       count: 13, arr: '$23.1k', unit: 'Rooftops' },
+              { num: 4, name: 'Studio & App Setup', count: 37, arr: '$20.2k', unit: 'Rooftops' },
+              { num: 5, name: 'Sync & Publish',     count: 56, arr: '$23.1k', unit: 'Rooftops' },
+            ]
+            const viniStages = [
+              { num: 1, name: 'Pre Onboarding',       count: 24, arr: '$23.1k', unit: 'Agents' },
+              { num: 2, name: 'Profile & User setup',  count: 34, arr: '$130k',  unit: 'Agent'  },
+              { num: 3, name: 'Agent Setup',           count: 37, arr: '$20.2k', unit: 'Agent'  },
+              { num: 4, name: 'Integrations',          count: 13, arr: '$23.1k', unit: 'Agent'  },
+              { num: 5, name: 'Testing',               count: 13, arr: '$23.1k', unit: 'Agent'  },
+              { num: 6, name: 'Deployment',            count: 56, arr: '$23.1k', unit: 'Agent'  },
+            ]
+            const pipelineStages = activeTab === 'vini_ai' ? viniStages : studioStages
+            return (
+              <div className="rounded-xl overflow-hidden flex items-stretch">
+                {pipelineStages.map((stage, i, stages) => {
+                  const isFirst = i === 0
+                  const isLast = i === stages.length - 1
+                  const a = 18
+                  const clipPath = isFirst
+                    ? `polygon(0% 0%, calc(100% - ${a}px) 0%, 100% 50%, calc(100% - ${a}px) 100%, 0% 100%)`
+                    : isLast
+                    ? `polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%, ${a}px 50%)`
+                    : `polygon(0% 0%, calc(100% - ${a}px) 0%, 100% 50%, calc(100% - ${a}px) 100%, 0% 100%, ${a}px 50%)`
+                  return (
+                    <div
+                      key={stage.num}
+                      className="flex-1 bg-gray-100 flex flex-col gap-2 py-4"
+                      style={{
+                        clipPath,
+                        marginLeft: i > 0 ? '-8px' : 0,
+                        zIndex: stages.length - i,
+                        paddingLeft: isFirst ? '16px' : '36px',
+                        paddingRight: isLast ? '16px' : '36px',
+                      }}
+                    >
+                      <span className="text-xs font-medium text-purple-600">{stage.num}. {stage.name}</span>
+                      <div className="text-sm text-gray-700">
+                        <span className="text-2xl font-bold text-gray-900">{stage.count}</span> {stage.unit}
+                      </div>
+                      <span className="text-sm text-gray-600">{stage.arr} ARR</span>
                     </div>
-                    <span className="text-sm text-gray-600">{stage.arr} ARR</span>
-                  </div>
-                )
-              })}
-            </div>
-          )}
+                  )
+                })}
+              </div>
+            )
+          })()}
         </div>
 
         <div className="border-b border-gray-200 px-3 py-3">
@@ -2162,7 +2193,7 @@ export function OnboardingTable({ activeTab = "all" }: { activeTab?: "all" | "st
             No of Rooftops:&nbsp;<span className="font-semibold text-blue-600">{widgetStats.rooftopCount.toLocaleString()}</span>
           </div>
           <div className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg bg-white text-sm text-gray-600">
-            Contracted ARR:&nbsp;<span className="font-semibold text-purple-600">{formatAmount(widgetStats.totalCarr)}</span>
+            ARR in Onboarding:&nbsp;<span className="font-semibold text-purple-600">{formatAmount(widgetStats.totalCarr)}</span>
           </div>
         </div>
 
